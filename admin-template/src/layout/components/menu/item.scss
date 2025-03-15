@@ -1,0 +1,117 @@
+li{
+  cursor: pointer;
+}
+a{
+  display: block;
+  line-height: 56px;
+  padding: 0 24px;
+  box-sizing: border-box;
+  margin-bottom: 6px;
+  .box{
+    display: flex;
+  }
+  .icon{
+    font-size: 16px;
+    margin-right: 6px;
+  }
+  .title{
+    width: calc(100% - 10px);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .icon-open{
+    position: absolute;
+    top: 0;
+    right: 16px;
+    width: 16px;
+    transform-origin: center center;
+    transition: transform .4s;
+    z-index: 2;
+  }
+  &.active .icon-open{
+    transform: rotateZ(90deg);
+  }
+
+  position: relative;
+  overflow: hidden;
+  &::before, &::after{
+    content: '';
+    position: absolute;
+    top: -50%;
+    background: linear-gradient(200deg, rgba(255,255,255,.4) 2%, rgba(255,255,255,0));
+    right: -10px;
+    height: 100px;
+    transform: rotate(-20deg) translateX(40px);
+  }
+  &::after{
+    width: 36px;
+    transition: transform .4s linear .2s;
+  }
+  &::before{
+    width: 56px;
+    transition: transform .4s linear;
+  }
+
+  // 想让父级高亮就改为 router-link-active
+  &.router-link-exact-active, &:hover{
+    color: white;
+    background: var(--main-color);
+    border-radius: 4px;
+  }
+  &.router-link-exact-active, &:hover{
+    &::before, &::after{
+      transform: rotate(-20deg);
+    }
+  }
+}
+
+.menu{
+  height: 0;
+  overflow: hidden;
+  transition: height .4s;
+  padding-left: 20px;
+  .menu{
+    margin-top: 6px;
+  }
+}
+
+$leftWidth: 200px;
+$gap: 6px;
+.shrink{
+  position: relative;
+  .shrink{
+    width: $leftWidth;
+  }
+  &.tier-0{
+    > .menu{
+      left: 100%;
+    }
+    > a {
+      .title, .icon-open{
+        display: none;
+      }
+    }
+    .icon-open{
+      transform: rotate(0);
+    }
+  }
+  .menu{
+    position: absolute;
+    left: $leftWidth;
+    top: 0;
+    height: auto !important;
+    background: white;
+    box-shadow: 0 4px 10px rgba(0,0,0,.1);
+    padding: $gap;
+    overflow: initial;
+    border-radius: 4px;
+    margin-top: 0;
+    display: none;
+  }
+  &:hover{
+    > .menu{
+      display: block;
+    }
+  }
+}

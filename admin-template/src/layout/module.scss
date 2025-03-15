@@ -1,0 +1,50 @@
+
+$sideWidth: 240px;
+.side{
+  width: $sideWidth;
+  height: 100vh;
+  color: white;
+  position: fixed;
+  z-index: 999;
+}
+.main{
+  width: calc(100% - $sideWidth);
+  margin-left: $sideWidth;
+  height: 100vh;
+  background: #F5F6F7;
+}
+
+.logo{
+  text-align: center;
+  padding: 24px 30px;
+  img{
+    width: 50%;
+    padding: 0 20px;
+    box-sizing: border-box;
+  }
+}
+
+.open{
+  position: absolute;
+  bottom: 34px;
+  left: 40px;
+  color: black;
+  cursor: pointer;
+}
+
+.pack-up{
+  $sideWidth: 94px;
+  .side{
+    width: $sideWidth;
+  }
+  .main{
+    width: calc(100% - $sideWidth);
+    margin-left: $sideWidth;
+  }
+  .logo{
+    padding: 24px 3px;
+    img{
+      width: 100%;
+    }
+  }
+}

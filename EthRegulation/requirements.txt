@@ -1,0 +1,17 @@
+# Core Flask
+Flask==2.2.5
+Flask-SQLAlchemy==3.0.5
+Flask-Migrate==4.0.4
+Flask-Marshmallow==0.14.0
+marshmallow-sqlalchemy==0.28.1
+SQLAlchemy==1.4.41
+
+# Database
+psycopg2-binary==2.9.9
+
+# Environment and Utils
+python-dotenv==0.21.1
+pytest==7.3.1  # 用于基本测试
+
+# CORS support for Vue.js integration
+flask-cors==3.0.10 

@@ -1,0 +1,268 @@
+.el-pagination {
+  justify-content: center;
+
+  .el-select {
+    width: 110px;
+  }
+}
+
+.el-button {
+  height: 42px;
+}
+
+.el-date-editor--timerange.el-input__inner {
+  width: 100%;
+}
+
+.el-form {
+  .el-form-item .el-form-item__label{
+    font-weight: 700;
+  }
+  .el-input, .el-textarea{
+    --el-input-bg-color: #F5F7FA;
+    --el-input-bg-color: #F5F7FA;
+  }
+  .el-textarea{
+    --el-input-border-color: #E2E8F0;
+  }
+  .el-input {
+    --el-input-border-color: #F5F7FA;
+    --el-input-height: 42px;
+  }
+
+  .el-select {
+    width: 100%;
+  }
+
+  .el-select__wrapper {
+    height: 50px;
+    background: #F5F7FA;
+    box-shadow: none;
+  }
+}
+
+.el-dialog {
+  // padding: 0;
+  padding: 0 0 var(--el-dialog-padding-primary) 0;
+  border-radius: 4px;
+
+  .el-dialog__header {
+    background: var(--main-color);
+    height: 70px;
+    padding: 0 var(--el-dialog-padding-primary);
+    position: relative;
+    overflow: hidden;
+    line-height: 70px;
+    border-radius: 4px 4px 0 0;
+    background-image: url('../../assets/imgs/dialog-header-bg.png');
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+
+    // &::after,
+    // &::before {
+    //   content: '';
+    //   position: absolute;
+    //   width: 250px;
+    //   height: 100px;
+    //   background: rgba(255, 255, 255, 0.1);
+    //   right: 0;
+    //   transform: rotate(-30deg);
+    // }
+
+    // &::before {
+    //   bottom: -60px;
+    //   right: -80px;
+    // }
+
+    // &::after {
+    //   right: -60px;
+    //   bottom: -30px;
+    // }
+  }
+
+  .el-date-editor.el-input{
+    width: 100%;
+    height: auto;
+  }
+
+  .el-dialog__title {
+    font-weight: bold;
+    font-size: 18px;
+    color: white;
+  }
+
+  .el-dialog__body {
+    padding: var(--el-dialog-padding-primary);
+  }
+
+  .el-dialog__headerbtn {
+    z-index: 1;
+    color: white;
+  }
+  .el-dialog__footer {
+    text-align: center;
+  }
+
+  .el-form--default.el-form--label-top .el-form-item .el-form-item__label {
+    font-weight: bold;
+  }
+
+  .el-dialog__close{
+    color: white;
+  }
+
+  .el-form-item.asterisk-left .el-form-item__label {
+    height: 50px;
+    line-height: 50px;
+  }
+
+  .el-form-item {
+    margin-bottom: 24px;
+  }
+
+  .el-button {
+    height: 42px;
+    padding: 0 26px;
+    font-weight: 400;
+  }
+}
+
+.el-drawer__header {
+  .el-drawer__title {
+    font-size: 18px;
+    font-weight: 700;
+  }
+}
+
+.el-drawer__body {
+  .el-form-item__label {
+    font-weight: 500;
+  }
+
+  .el-form {
+    height: calc(100vh - 200px);
+    overflow-y: auto;
+
+    .el-input {
+      --el-input-height: 50px;
+    }
+
+    .el-select {
+      width: 100%;
+    }
+
+    .el-select__wrapper {
+      height: 50px;
+    }
+  }
+
+  .el-button {
+    width: 140px;
+    height: 42px;
+  }
+}
+
+.el-dropdown {
+  vertical-align: middle;
+}
+
+.el-pagination.is-background .btn-next.is-active,
+.el-pagination.is-background .btn-prev.is-active,
+.el-pagination.is-background .el-pager li.is-active {
+  background: var(--main-color);
+}
+
+.el-form-item {
+  margin-bottom: 14px;
+
+  .el-form-item__label {
+    padding: 0;
+  }
+
+  &:last-child {
+    margin-bottom: 24px;
+  }
+}
+
+.el-button {
+  border-radius: 8px;
+}
+
+.el-button:focus,
+.el-button:hover {
+  color: var(--main-color);
+}
+
+.el-button--primary,
+.el-button--info {
+  border: none;
+}
+
+.el-button--primary {
+  background: var(--main-color);
+
+  &:hover,
+  &:focus {
+    background: var(--main-color);
+    color: white;
+  }
+}
+
+.el-button--info {
+  background: var(--main-color-bg-gray);
+  color: #63687C;
+
+  &:hover,
+  &:focus {
+    color: #63687C;
+    background: var(--main-color-bg-gray);
+  }
+}
+
+.el-link:not(:last-child) {
+  margin-right: 8px;
+}
+
+.el-loading-mask {
+  background: transparent;
+}
+
+.el-checkbox__input {
+
+  &.is-checked,
+  &.is-indeterminate {
+    .el-checkbox__inner {
+      background: var(--main-color);
+      border-color: var(--main-color);
+    }
+  }
+}
+
+.el-table {
+  color: var(--main-font-color);
+
+  thead tr {
+    background: #fafafa;
+  }
+
+  .el-table__footer-wrapper,
+  .el-table__header-wrapper {
+    border-radius: 4px 4px 0 0;
+  }
+
+  .el-table__header-wrapper tr th.el-table-fixed-column--left,
+  .el-table__header-wrapper tr th.el-table-fixed-column--right,
+  th.el-table__cell {
+    background: var(--table-header-bg);
+    color: var(--main-font-color);
+    height: 52px;
+  }
+}
+
+.el-table__placeholder {
+  display: none;
+}
+
+.el-drawer__header {
+  margin-bottom: 0;
+}

@@ -1,0 +1,32 @@
+.layout-search-header{
+  display: flex;
+  margin-bottom: 10px;
+  .left{
+    margin-right: auto;
+  }
+  .right{
+    text-align: right;
+  }
+
+
+  :deep(.el-input), :deep(.el-select){
+    width: 294px;
+    margin-right: 10px;
+    margin-bottom: 10px;
+  }
+  :deep(.el-select__wrapper){
+    height: 40px;
+  }
+  :deep(.el-input__wrapper){
+    height: 40px;
+    border-radius: 4px;
+  }
+  :deep(.el-button+.el-button){
+    margin-left: 8px;
+  }  
+  :deep(.el-button){
+    border-radius: 4px;
+    height: 42px;
+    width: 100px;
+  }
+}

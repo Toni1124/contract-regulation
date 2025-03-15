@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <title>CoDesign Iconfont Demo</title>
+  <link rel="stylesheet" href="iconfont.css">
+  <link rel="stylesheet" href="demo.css">
+  <script src="iconfont.js"></script>
+</head>
+
+<body>
+  <div class="codesign-demo">
+    <div class="codesign-demo__header">
+      <h1>CoDesign Iconfont Demo</h1>
+      <a class="codesign-demo__header-logo" href="https://codesign.qq.com/" target="_blank"></a>
+    </div>
+    <div class="codesign-demo__type">
+      <div class="codesign-demo__type-block">
+        <div class="codesign-demo__type-title">
+          Symbol (推荐用法)：
+        </div>
+        <ul>
+          <li>支持多色图标，支持调整颜色大小；</li>
+          <li>兼容性支持 IE9+。</li>
+        </ul>
+      </div>
+      <div class="codesign-demo__type-block">
+        <div class="codesign-demo__type-title">
+          Class：
+        </div>
+        <ul>
+          <li>不支持多色图标，支持按字体方式调整颜色大小；</li>
+          <li>需要对图标进行标准化处理，兼容性支持 IE8+。</li>
+        </ul>
+      </div>
+      <div class="codesign-demo__type-block">
+        <div class="codesign-demo__type-title">
+          Unicode：
+        </div>
+        <ul>
+          <li>不支持多色图标，支持按字体方式调整颜色大小；</li>
+          <li>需要对图标进行标准化处理，兼容性支持 IE6+。</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="codesign-demo__description">
+      <p>如引用Unicode或Class字体包，需要对上传的图标进行标准化处理，避免显示异常。</p>
+      <ul>
+        <li>闭合：图标路径描点要处于封闭状态</li>
+        <li>合并：如果有多个图形进行组合，要对图形合并扩展</li>
+        <li>轮廓化：要将描边转化为闭合图形，并填充颜色</li>
+      </ul>
+      <p>详情可见帮助中心：<a href="https://codesign.qq.com/hc/icons/upload/" target="_blank">https://codesign.qq.com/hc/icons/upload/</a></p>
+    </div>
+
+    <div class="codesign-demo__nav">
+      <ul id="tabs" class="codesign-demo__nav-tabs">
+        <li class="codesign-demo__nav-tab active" data-target="symbol"><span>Symbol</span></li>
+        <li class="codesign-demo__nav-tab" data-target="iconfont"><span>Class</span></li>
+        <li class="codesign-demo__nav-tab" data-target="unicode"><span>Unicode</span></li>
+      </ul>
+
+      <a href="https://codesign.qq.com/app/icon/8ALwE9VdoNZX1Dp/detail" target="_blank" class="codesign-demo__nav-project">查看图标库</a>
+
+    </div>
+
+    <div id="unicode" class="codesign-demo__container codesign-demo__container--unicode">
+      <ul class="codesign-demo__icon-lists">
+        <li class="codesign-demo__icon-item" title="双击复制 unicode">
+          <span class="icon iconfont">&#xe001;</span>
+          <div class="name">编辑</div>
+          <div class="code-name">&amp;#xe001</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 unicode">
+          <span class="icon iconfont">&#xe002;</span>
+          <div class="name">发送交易</div>
+          <div class="code-name">&amp;#xe002</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 unicode">
+          <span class="icon iconfont">&#xe003;</span>
+          <div class="name">账户管理</div>
+          <div class="code-name">&amp;#xe003</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 unicode">
+          <span class="icon iconfont">&#xe004;</span>
+          <div class="name">跨链交易管理</div>
+          <div class="code-name">&amp;#xe004</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 unicode">
+          <span class="icon iconfont">&#xe005;</span>
+          <div class="name">关闭样式1</div>
+          <div class="code-name">&amp;#xe005</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 unicode">
+          <span class="icon iconfont">&#xe006;</span>
+          <div class="name">设置</div>
+          <div class="code-name">&amp;#xe006</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 unicode">
+          <span class="icon iconfont">&#xe007;</span>
+          <div class="name">平台用户</div>
+          <div class="code-name">&amp;#xe007</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 unicode">
+          <span class="icon iconfont">&#xe008;</span>
+          <div class="name">收起</div>
+          <div class="code-name">&amp;#xe008</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 unicode">
+          <span class="icon iconfont">&#xe009;</span>
+          <div class="name">展开</div>
+          <div class="code-name">&amp;#xe009</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 unicode">
+          <span class="icon iconfont">&#xe00a;</span>
+          <div class="name">子链管理</div>
+          <div class="code-name">&amp;#xe00a</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 unicode">
+          <span class="icon iconfont">&#xe00b;</span>
+          <div class="name">路由器管理</div>
+          <div class="code-name">&amp;#xe00b</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 unicode">
+          <span class="icon iconfont">&#xe00c;</span>
+          <div class="name">下拉</div>
+          <div class="code-name">&amp;#xe00c</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 unicode">
+          <span class="icon iconfont">&#xe00d;</span>
+          <div class="name">资源管理</div>
+          <div class="code-name">&amp;#xe00d</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 unicode">
+          <span class="icon iconfont">&#xe00e;</span>
+          <div class="name">查询交易</div>
+          <div class="code-name">&amp;#xe00e</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 unicode">
+          <span class="icon iconfont">&#xe00f;</span>
+          <div class="name">保存</div>
+          <div class="code-name">&amp;#xe00f</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 unicode">
+          <span class="icon iconfont">&#xe011;</span>
+          <div class="name">头像上传</div>
+          <div class="code-name">&amp;#xe011</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 unicode">
+          <span class="icon iconfont">&#xe017;</span>
+          <div class="name">tab关闭</div>
+          <div class="code-name">&amp;#xe017</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 unicode">
+          <span class="icon iconfont">&#xe018;</span>
+          <div class="name">校验中</div>
+          <div class="code-name">&amp;#xe018</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 unicode">
+          <span class="icon iconfont">&#xe019;</span>
+          <div class="name">校验完成</div>
+          <div class="code-name">&amp;#xe019</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 unicode">
+          <span class="icon iconfont">&#xe01a;</span>
+          <div class="name">切换</div>
+          <div class="code-name">&amp;#xe01a</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 unicode">
+          <span class="icon iconfont">&#xe01b;</span>
+          <div class="name">指示</div>
+          <div class="code-name">&amp;#xe01b</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 unicode">
+          <span class="icon iconfont">&#xe022;</span>
+          <div class="name">禁用</div>
+          <div class="code-name">&amp;#xe022</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 unicode">
+          <span class="icon iconfont">&#xe023;</span>
+          <div class="name">删除</div>
+          <div class="code-name">&amp;#xe023</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 unicode">
+          <span class="icon iconfont">&#xe024;</span>
+          <div class="name">密码可见</div>
+          <div class="code-name">&amp;#xe024</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 unicode">
+          <span class="icon iconfont">&#xe025;</span>
+          <div class="name">验证码</div>
+          <div class="code-name">&amp;#xe025</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 unicode">
+          <span class="icon iconfont">&#xe026;</span>
+          <div class="name">密码不可见</div>
+          <div class="code-name">&amp;#xe026</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 unicode">
+          <span class="icon iconfont">&#xe027;</span>
+          <div class="name">密码</div>
+          <div class="code-name">&amp;#xe027</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 unicode">
+          <span class="icon iconfont">&#xe028;</span>
+          <div class="name">账号</div>
+          <div class="code-name">&amp;#xe028</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 unicode">
+          <span class="icon iconfont">&#xe029;</span>
+          <div class="name">搜索</div>
+          <div class="code-name">&amp;#xe029</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 unicode">
+          <span class="icon iconfont">&#xe02a;</span>
+          <div class="name">复制</div>
+          <div class="code-name">&amp;#xe02a</div>
+        </li>
+      </ul>
+      <div class="codesign-demo__usage markdown">
+        <h2>Unicode 引用</h2>
+        <h3>1. 添加 <code>@font-face</code> 块, 引用图标字体文件；</h3>
+        <pre><code>@font-face {
+  font-family: 'iconfont';
+  src: url('iconfont.eot');
+  src: url('iconfont.eot?#iefix') format('embedded-opentype'),
+  url('iconfont.woff2') format('woff2'),
+  url('iconfont.woff') format('woff'),
+  url('iconfont.ttf') format('truetype'),
+  url('iconfont.svg#iconfont') format('svg');
+}
+        </code></pre>
+        <h3>2. 设置 <code>.iconfont</code> 的基本样式；</h3>
+        <pre><code>.iconfont {
+  font-family: "iconfont" !important;
+  font-size: 16px;
+  font-style: normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+        </code></pre>
+        <h3>3. 应用图标，输入对应的 Unicode 值。</h3>
+        <pre><code>&lt;span class="iconfont"&gt;&amp;#xe624;&lt;/span&gt;</code></pre>
+        <blockquote>
+          <p>
+            "iconfont" 是图标库下的 “iconfont family” 字段，可以通过编辑图标库查看，默认是 "iconfont"。
+          </p>
+        </blockquote>
+      </div>
+    </div>
+
+    <div id="iconfont" class="codesign-demo__container codesign-demo__container--iconfont">
+      <ul class="codesign-demo__icon-lists">
+        <li class="codesign-demo__icon-item" title="双击复制类名">
+          <span class="icon iconfont icon-bianji"></span>
+          <div class="name">
+            编辑
+          </div>
+          <div class="code-name" title=".icon-bianji">
+            .icon-bianji</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制类名">
+          <span class="icon iconfont icon-fasongjiaoyi"></span>
+          <div class="name">
+            发送交易
+          </div>
+          <div class="code-name" title=".icon-fasongjiaoyi">
+            .icon-fasongjiaoyi</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制类名">
+          <span class="icon iconfont icon-zhanghuguanli"></span>
+          <div class="name">
+            账户管理
+          </div>
+          <div class="code-name" title=".icon-zhanghuguanli">
+            .icon-zhanghuguanli</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制类名">
+          <span class="icon iconfont icon-kualianjiaoyiguanli"></span>
+          <div class="name">
+            跨链交易管理
+          </div>
+          <div class="code-name" title=".icon-kualianjiaoyiguanli">
+            .icon-kualianjiaoyiguanli</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制类名">
+          <span class="icon iconfont icon-guanbiyangshi1"></span>
+          <div class="name">
+            关闭样式1
+          </div>
+          <div class="code-name" title=".icon-guanbiyangshi1">
+            .icon-guanbiyangshi1</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制类名">
+          <span class="icon iconfont icon-shezhi"></span>
+          <div class="name">
+            设置
+          </div>
+          <div class="code-name" title=".icon-shezhi">
+            .icon-shezhi</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制类名">
+          <span class="icon iconfont icon-pingsiyonghu"></span>
+          <div class="name">
+            平台用户
+          </div>
+          <div class="code-name" title=".icon-pingsiyonghu">
+            .icon-pingsiyonghu</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制类名">
+          <span class="icon iconfont icon-shouqi"></span>
+          <div class="name">
+            收起
+          </div>
+          <div class="code-name" title=".icon-shouqi">
+            .icon-shouqi</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制类名">
+          <span class="icon iconfont icon-zhankai"></span>
+          <div class="name">
+            展开
+          </div>
+          <div class="code-name" title=".icon-zhankai">
+            .icon-zhankai</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制类名">
+          <span class="icon iconfont icon-zilianguanli"></span>
+          <div class="name">
+            子链管理
+          </div>
+          <div class="code-name" title=".icon-zilianguanli">
+            .icon-zilianguanli</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制类名">
+          <span class="icon iconfont icon-luoyaoqiguanli"></span>
+          <div class="name">
+            路由器管理
+          </div>
+          <div class="code-name" title=".icon-luoyaoqiguanli">
+            .icon-luoyaoqiguanli</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制类名">
+          <span class="icon iconfont icon-xiala"></span>
+          <div class="name">
+            下拉
+          </div>
+          <div class="code-name" title=".icon-xiala">
+            .icon-xiala</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制类名">
+          <span class="icon iconfont icon-ziyuanguanli"></span>
+          <div class="name">
+            资源管理
+          </div>
+          <div class="code-name" title=".icon-ziyuanguanli">
+            .icon-ziyuanguanli</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制类名">
+          <span class="icon iconfont icon-zhaxunjiaoyi"></span>
+          <div class="name">
+            查询交易
+          </div>
+          <div class="code-name" title=".icon-zhaxunjiaoyi">
+            .icon-zhaxunjiaoyi</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制类名">
+          <span class="icon iconfont icon-baocun"></span>
+          <div class="name">
+            保存
+          </div>
+          <div class="code-name" title=".icon-baocun">
+            .icon-baocun</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制类名">
+          <span class="icon iconfont icon-touxiangshangzhuan"></span>
+          <div class="name">
+            头像上传
+          </div>
+          <div class="code-name" title=".icon-touxiangshangzhuan">
+            .icon-touxiangshangzhuan</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制类名">
+          <span class="icon iconfont icon-tabguanbi"></span>
+          <div class="name">
+            tab关闭
+          </div>
+          <div class="code-name" title=".icon-tabguanbi">
+            .icon-tabguanbi</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制类名">
+          <span class="icon iconfont icon-jiaoyanzhong"></span>
+          <div class="name">
+            校验中
+          </div>
+          <div class="code-name" title=".icon-jiaoyanzhong">
+            .icon-jiaoyanzhong</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制类名">
+          <span class="icon iconfont icon-jiaoyanwancheng"></span>
+          <div class="name">
+            校验完成
+          </div>
+          <div class="code-name" title=".icon-jiaoyanwancheng">
+            .icon-jiaoyanwancheng</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制类名">
+          <span class="icon iconfont icon-qihuan"></span>
+          <div class="name">
+            切换
+          </div>
+          <div class="code-name" title=".icon-qihuan">
+            .icon-qihuan</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制类名">
+          <span class="icon iconfont icon-zhizhi"></span>
+          <div class="name">
+            指示
+          </div>
+          <div class="code-name" title=".icon-zhizhi">
+            .icon-zhizhi</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制类名">
+          <span class="icon iconfont icon-jinyong"></span>
+          <div class="name">
+            禁用
+          </div>
+          <div class="code-name" title=".icon-jinyong">
+            .icon-jinyong</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制类名">
+          <span class="icon iconfont icon-shanshu"></span>
+          <div class="name">
+            删除
+          </div>
+          <div class="code-name" title=".icon-shanshu">
+            .icon-shanshu</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制类名">
+          <span class="icon iconfont icon-mimakexian"></span>
+          <div class="name">
+            密码可见
+          </div>
+          <div class="code-name" title=".icon-mimakexian">
+            .icon-mimakexian</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制类名">
+          <span class="icon iconfont icon-yanzhengma"></span>
+          <div class="name">
+            验证码
+          </div>
+          <div class="code-name" title=".icon-yanzhengma">
+            .icon-yanzhengma</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制类名">
+          <span class="icon iconfont icon-mimabukexian"></span>
+          <div class="name">
+            密码不可见
+          </div>
+          <div class="code-name" title=".icon-mimabukexian">
+            .icon-mimabukexian</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制类名">
+          <span class="icon iconfont icon-mima"></span>
+          <div class="name">
+            密码
+          </div>
+          <div class="code-name" title=".icon-mima">
+            .icon-mima</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制类名">
+          <span class="icon iconfont icon-zhangxiao"></span>
+          <div class="name">
+            账号
+          </div>
+          <div class="code-name" title=".icon-zhangxiao">
+            .icon-zhangxiao</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制类名">
+          <span class="icon iconfont icon-xiaosuo"></span>
+          <div class="name">
+            搜索
+          </div>
+          <div class="code-name" title=".icon-xiaosuo">
+            .icon-xiaosuo</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制类名">
+          <span class="icon iconfont icon-fuzhi"></span>
+          <div class="name">
+            复制
+          </div>
+          <div class="code-name" title=".icon-fuzhi">
+            .icon-fuzhi</div>
+        </li>
+      </ul>
+      <div class="codesign-demo__usage markdown">
+        <h2>Class 引用</h2>
+        <h3>1. 引入已经将 unicode 与类名一一对应的 <code>iconfont.css</code> 文件；</h3>
+        <pre><code class="language-html">&lt;link rel="stylesheet" href="./iconfont.css"&gt;
+        </code></pre>
+        <h3>2. 应用图标，使用对应的类名。</h3>
+        <pre><code class="language-html">&lt;span class="iconfont prefix-classname"&gt;&lt;/span&gt;
+        </code></pre>
+        <blockquote>
+          <p>
+            "iconfont" 是图标库下的 “iconfont family” 字段，可以通过编辑图标库查看，默认是 "iconfont"。<br>
+            "prefix-" 是图标库下的“iconfont 前缀”字段，可以通过编辑图标库查看，默认是 "icon-"。
+          </p>
+        </blockquote>
+      </div>
+    </div>
+
+    <div id="symbol" class="codesign-demo__container codesign-demo__container--symbol active">
+      <ul class="codesign-demo__icon-lists">
+        <li class="codesign-demo__icon-item" title="双击复制 id">
+          <svg class="icon svg-icon" aria-hidden="true">
+            <use xlink:href="#icon-bianji"></use>
+          </svg>
+          <div class="name">编辑</div>
+          <div class="code-name">#icon-bianji</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 id">
+          <svg class="icon svg-icon" aria-hidden="true">
+            <use xlink:href="#icon-fasongjiaoyi"></use>
+          </svg>
+          <div class="name">发送交易</div>
+          <div class="code-name">#icon-fasongjiaoyi</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 id">
+          <svg class="icon svg-icon" aria-hidden="true">
+            <use xlink:href="#icon-zhanghuguanli"></use>
+          </svg>
+          <div class="name">账户管理</div>
+          <div class="code-name">#icon-zhanghuguanli</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 id">
+          <svg class="icon svg-icon" aria-hidden="true">
+            <use xlink:href="#icon-kualianjiaoyiguanli"></use>
+          </svg>
+          <div class="name">跨链交易管理</div>
+          <div class="code-name">#icon-kualianjiaoyiguanli</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 id">
+          <svg class="icon svg-icon" aria-hidden="true">
+            <use xlink:href="#icon-guanbiyangshi1"></use>
+          </svg>
+          <div class="name">关闭样式1</div>
+          <div class="code-name">#icon-guanbiyangshi1</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 id">
+          <svg class="icon svg-icon" aria-hidden="true">
+            <use xlink:href="#icon-shezhi"></use>
+          </svg>
+          <div class="name">设置</div>
+          <div class="code-name">#icon-shezhi</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 id">
+          <svg class="icon svg-icon" aria-hidden="true">
+            <use xlink:href="#icon-pingsiyonghu"></use>
+          </svg>
+          <div class="name">平台用户</div>
+          <div class="code-name">#icon-pingsiyonghu</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 id">
+          <svg class="icon svg-icon" aria-hidden="true">
+            <use xlink:href="#icon-shouqi"></use>
+          </svg>
+          <div class="name">收起</div>
+          <div class="code-name">#icon-shouqi</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 id">
+          <svg class="icon svg-icon" aria-hidden="true">
+            <use xlink:href="#icon-zhankai"></use>
+          </svg>
+          <div class="name">展开</div>
+          <div class="code-name">#icon-zhankai</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 id">
+          <svg class="icon svg-icon" aria-hidden="true">
+            <use xlink:href="#icon-zilianguanli"></use>
+          </svg>
+          <div class="name">子链管理</div>
+          <div class="code-name">#icon-zilianguanli</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 id">
+          <svg class="icon svg-icon" aria-hidden="true">
+            <use xlink:href="#icon-luoyaoqiguanli"></use>
+          </svg>
+          <div class="name">路由器管理</div>
+          <div class="code-name">#icon-luoyaoqiguanli</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 id">
+          <svg class="icon svg-icon" aria-hidden="true">
+            <use xlink:href="#icon-xiala"></use>
+          </svg>
+          <div class="name">下拉</div>
+          <div class="code-name">#icon-xiala</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 id">
+          <svg class="icon svg-icon" aria-hidden="true">
+            <use xlink:href="#icon-ziyuanguanli"></use>
+          </svg>
+          <div class="name">资源管理</div>
+          <div class="code-name">#icon-ziyuanguanli</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 id">
+          <svg class="icon svg-icon" aria-hidden="true">
+            <use xlink:href="#icon-zhaxunjiaoyi"></use>
+          </svg>
+          <div class="name">查询交易</div>
+          <div class="code-name">#icon-zhaxunjiaoyi</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 id">
+          <svg class="icon svg-icon" aria-hidden="true">
+            <use xlink:href="#icon-baocun"></use>
+          </svg>
+          <div class="name">保存</div>
+          <div class="code-name">#icon-baocun</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 id">
+          <svg class="icon svg-icon" aria-hidden="true">
+            <use xlink:href="#icon-touxiangshangzhuan"></use>
+          </svg>
+          <div class="name">头像上传</div>
+          <div class="code-name">#icon-touxiangshangzhuan</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 id">
+          <svg class="icon svg-icon" aria-hidden="true">
+            <use xlink:href="#icon-tabguanbi"></use>
+          </svg>
+          <div class="name">tab关闭</div>
+          <div class="code-name">#icon-tabguanbi</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 id">
+          <svg class="icon svg-icon" aria-hidden="true">
+            <use xlink:href="#icon-jiaoyanzhong"></use>
+          </svg>
+          <div class="name">校验中</div>
+          <div class="code-name">#icon-jiaoyanzhong</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 id">
+          <svg class="icon svg-icon" aria-hidden="true">
+            <use xlink:href="#icon-jiaoyanwancheng"></use>
+          </svg>
+          <div class="name">校验完成</div>
+          <div class="code-name">#icon-jiaoyanwancheng</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 id">
+          <svg class="icon svg-icon" aria-hidden="true">
+            <use xlink:href="#icon-qihuan"></use>
+          </svg>
+          <div class="name">切换</div>
+          <div class="code-name">#icon-qihuan</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 id">
+          <svg class="icon svg-icon" aria-hidden="true">
+            <use xlink:href="#icon-zhizhi"></use>
+          </svg>
+          <div class="name">指示</div>
+          <div class="code-name">#icon-zhizhi</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 id">
+          <svg class="icon svg-icon" aria-hidden="true">
+            <use xlink:href="#icon-jinyong"></use>
+          </svg>
+          <div class="name">禁用</div>
+          <div class="code-name">#icon-jinyong</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 id">
+          <svg class="icon svg-icon" aria-hidden="true">
+            <use xlink:href="#icon-shanshu"></use>
+          </svg>
+          <div class="name">删除</div>
+          <div class="code-name">#icon-shanshu</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 id">
+          <svg class="icon svg-icon" aria-hidden="true">
+            <use xlink:href="#icon-mimakexian"></use>
+          </svg>
+          <div class="name">密码可见</div>
+          <div class="code-name">#icon-mimakexian</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 id">
+          <svg class="icon svg-icon" aria-hidden="true">
+            <use xlink:href="#icon-yanzhengma"></use>
+          </svg>
+          <div class="name">验证码</div>
+          <div class="code-name">#icon-yanzhengma</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 id">
+          <svg class="icon svg-icon" aria-hidden="true">
+            <use xlink:href="#icon-mimabukexian"></use>
+          </svg>
+          <div class="name">密码不可见</div>
+          <div class="code-name">#icon-mimabukexian</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 id">
+          <svg class="icon svg-icon" aria-hidden="true">
+            <use xlink:href="#icon-mima"></use>
+          </svg>
+          <div class="name">密码</div>
+          <div class="code-name">#icon-mima</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 id">
+          <svg class="icon svg-icon" aria-hidden="true">
+            <use xlink:href="#icon-zhangxiao"></use>
+          </svg>
+          <div class="name">账号</div>
+          <div class="code-name">#icon-zhangxiao</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 id">
+          <svg class="icon svg-icon" aria-hidden="true">
+            <use xlink:href="#icon-xiaosuo"></use>
+          </svg>
+          <div class="name">搜索</div>
+          <div class="code-name">#icon-xiaosuo</div>
+        </li>
+        <li class="codesign-demo__icon-item" title="双击复制 id">
+          <svg class="icon svg-icon" aria-hidden="true">
+            <use xlink:href="#icon-fuzhi"></use>
+          </svg>
+          <div class="name">复制</div>
+          <div class="code-name">#icon-fuzhi</div>
+        </li>
+      </ul>
+      <div class="codesign-demo__usage markdown">
+        <h2>Symbol 引用</h2>
+        <h3>1. 引入 <code>iconfont.js</code> 文件，向页面添加 SVG sprite；</h3>
+        <pre><code class="language-html">&lt;script src="./iconfont.js"&gt;&lt;/script&gt;
+</code></pre>
+        <h3>2. 设置基本样式；</h3>
+        <pre><code class="language-html">&lt;style&gt;
+.icon {
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.15em;
+  fill: currentColor;
+  overflow: hidden;
+}
+&lt;/style&gt;
+</code></pre>
+        <h3>3. 应用图标，使用对应的 id 值。</h3>
+        <pre><code class="language-html">&lt;svg class="icon" aria-hidden="true"&gt;
+&lt;use xlink:href="#prefix-xxx"&gt;&lt;/use&gt;
+&lt;/svg&gt;
+</code></pre>
+        <blockquote>
+          <p>
+            "iconfont" 是图标库下的 “iconfont family” 字段，可以通过编辑图标库查看，默认是 "iconfont"。<br>
+            "prefix-" 是图标库下的“iconfont 前缀”字段，可以通过编辑图标库查看，默认是 "icon-"。
+          </p>
+        </blockquote>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function ready(callback) {
+      if (document.readyState != 'loading') callback();
+      else if (document.addEventListener) document.addEventListener('DOMContentLoaded', callback);
+      else document.attachEvent('onreadystatechange', function () {
+        if (document.readyState == 'complete') callback();
+      });
+    }
+
+    ready(function () {
+      const tabs = document.querySelectorAll('.codesign-demo__nav-tab');
+      const tabPanels = document.querySelectorAll(".codesign-demo__container");
+
+      const tabClickHandler = function (tabClickEvent) {
+        for (let i = 0; i < tabs.length; i++) {
+          tabs[i].classList.remove("active");
+        }
+
+        let clickedTab = tabClickEvent.currentTarget;
+        clickedTab.classList.add("active");
+        tabClickEvent.preventDefault();
+
+        for (i = 0; i < tabPanels.length; i++) {
+          tabPanels[i].classList.remove("active");
+        }
+        let activePanelId = clickedTab.getAttribute("data-target");
+        let activePanel = document.querySelector("#" + activePanelId);
+        activePanel.classList.add("active");
+      }
+
+      for (i = 0; i < tabs.length; i++) {
+        tabs[i].addEventListener("click", tabClickHandler);
+      }
+
+      const icons =  document.querySelectorAll(".codesign-demo__icon-item")
+
+      //给每个li绑定事件
+      for(let i = 0; i < icons.length; i++){
+        icons[i].ondblclick = function (e) {
+          //弹出对应的li节点里面的内容
+          console.log(e.currentTarget)
+          const iconName = e.currentTarget.querySelector('.code-name')
+          console.log(iconName)
+
+          const input = document.createElement('input')
+          document.body.appendChild(input)
+          input.setAttribute('value', iconName.innerText)
+          input.select()
+          if (document.execCommand('copy')) {
+            document.execCommand('copy')
+            console.log('复制成功')
+          }
+          document.body.removeChild(input)
+
+        }
+      }
+    });
+  </script>
+</body>
+
+</html>

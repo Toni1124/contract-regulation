@@ -1,0 +1,20 @@
+html{
+  font-size: 14px;
+}
+body, ul, h1, h2, h3, h4, h5, h6, p, pre{
+  margin: 0;
+}
+ul{
+  list-style: none;
+  padding: 0;
+}
+a{
+  text-decoration: none;
+  color: initial;
+}
+
+#app {
+  font-family: Avenir, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
