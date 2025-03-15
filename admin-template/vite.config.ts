@@ -53,6 +53,14 @@ export default defineConfig(async () => ({
   },
 
   clearScreen: false,
-  server: { proxy },
+  server: {
+    proxy: {
+      '/admin-template/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/admin-template\/api/, '/api')
+      }
+    },
+  },
   preview: { proxy },
 }));

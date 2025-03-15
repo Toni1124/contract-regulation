@@ -362,102 +362,22 @@ import { ref, onMounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Plus, Delete } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
+import { getRuleList, addRule, updateRule, deleteRule } from '@/api/rules'
+import useStoreUser from '@/store/user'
 
 const router = useRouter()
+const storeUser = useStoreUser()
 
-// 生成更多的示例合约数据
-const generateMockContracts = () => {
-  const contracts = [];
-  const contractTypes = ['Token', 'Trade', 'Loan', 'Stake', 'Swap', 'NFT', 'DAO', 'Bridge'];
-  const versions = ['V1', 'V2', 'V3'];
-
-  for (let i = 1; i <= 100; i++) {
-    const type = contractTypes[Math.floor(Math.random() * contractTypes.length)];
-    const version = versions[Math.floor(Math.random() * versions.length)];
-    const name = `${type}Contract${version}`;
-    const address = `0x${Math.random().toString(16).slice(2).padStart(40, '0')}`;
-    
-    contracts.push({
-      id: i,
-      name,
-      address,
-      createTime: new Date(2024, 0, Math.floor(Math.random() * 60) + 1).toISOString(),
-      sourceCode: `contract ${name} {
-    // State variables
-    address public owner;
-    uint256 public totalSupply;
-    mapping(address => uint256) public balances;
-    
-    // Events
-    event Transfer(address indexed from, address indexed to, uint256 value);
-    
-    constructor() {
-        owner = msg.sender;
-    }
-    
-    // Main functions
-    function transfer(address to, uint256 amount) public {
-        require(balances[msg.sender] >= amount, "Insufficient balance");
-        balances[msg.sender] -= amount;
-        balances[to] += amount;
-        emit Transfer(msg.sender, to, amount);
-    }
-    
-    function mint(address to, uint256 amount) public {
-        require(msg.sender == owner, "Only owner can mint");
-        totalSupply += amount;
-        balances[to] += amount;
-        emit Transfer(address(0), to, amount);
-    }
-}`
-    });
-  }
-  return contracts;
-};
-
-// 生成更多的示例规则数据
-const generateMockRules = () => {
-  const rules = [];
-  const ruleTypes = ['转账限制', '交易频率', '交易时间', '金额上限', '地址白名单', '操作权限'];
-  
-  for (let i = 1; i <= 50; i++) {
-    const type = ruleTypes[Math.floor(Math.random() * ruleTypes.length)];
-    const contractIndex = Math.floor(Math.random() * 100);
-    
-    rules.push({
-      id: i,
-      name: `${type}规则${i}`,
-      regulatorAddress: '0x1234567890abcdef1234567890abcdef12345678',
-      description: `这是一个${type}规则的示例描述`,
-      contractAddress: contracts.value[contractIndex].address,
-      owner: 'super',
-      ruleId: `RULE202403${String(i).padStart(4, '0')}`,
-      status: Math.floor(Math.random() * 3),
-      createTime: new Date(2024, 0, Math.floor(Math.random() * 60) + 1).toISOString(),
-      functions: [
-        {
-          name: 'transfer',
-          params: [
-            { name: 'amount', type: 'uint256', condition: '<=', value: '1000000000000000000000' }
-          ]
-        }
-      ]
-    });
-  }
-  return rules;
-};
-
-// 更新示例数据
-const contracts = ref(generateMockContracts());
-const mockData = generateMockRules();
+// 使用空数组初始化
+const contracts = ref([]);
 
 // 响应式状态
 const searchQuery = ref('')
-const tableData = ref(mockData)
+const tableData = ref([])  // 改为空数组
 const loading = ref(false)
 const currentPage = ref(1)
 const pageSize = ref(10)
-const total = ref(mockData.length)
+const total = ref(0)  // 改为 0
 const dialogVisible = ref(false)
 const contractDialogVisible = ref(false)
 const selectedContract = ref<any>(null)
@@ -524,20 +444,32 @@ const formatDate = (dateStr: string) => {
 }
 
 // 事件处理
-const handleSearch = () => {
-  if (!searchQuery.value) {
-    tableData.value = mockData
-    return
+const handleSearch = async () => {
+  loading.value = true
+  try {
+    const [err, res] = await getRuleList({
+      page: currentPage.value,
+      pageSize: pageSize.value,
+      keyword: searchQuery.value
+    })
+    if (!err && res.code === 200) {
+      tableData.value = res.data.list
+      total.value = res.data.total
+    } else {
+      ElMessage.error(err?.message || '获取数据失败')
+      /* 注释掉 Mock 数据回退
+      tableData.value = mockData
+      total.value = mockData.length
+      */
+    }
+  } finally {
+    loading.value = false
   }
-  const query = searchQuery.value.toLowerCase()
-  tableData.value = mockData.filter(item => 
-    item.name.toLowerCase().includes(query) ||
-    item.contractAddress.toLowerCase().includes(query)
-  )
 }
 
 const handleReset = () => {
   searchQuery.value = ''
+  currentPage.value = 1
   handleSearch()
 }
 
@@ -613,8 +545,14 @@ const handleDelete = async (row: any) => {
         type: 'warning'
       }
     )
-    tableData.value = tableData.value.filter(item => item.id !== row.id)
-    ElMessage.success('删除成功')
+    
+    const [err, res] = await deleteRule(row.id)
+    if (!err && res.code === 200) {
+      ElMessage.success('删除成功')
+      handleSearch() // 重新加载数据
+    } else {
+      ElMessage.error(err?.message || '删除失败')
+    }
   } catch (error) {
     console.error('删除失败:', error)
   }
@@ -659,30 +597,34 @@ const submitForm = async () => {
       return
     }
 
-    // 生成新的规则ID
-    const newId = tableData.value.length + 1
-    const newRuleId = `RULE${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}${String(new Date().getDate()).padStart(2, '0')}${String(newId).padStart(3, '0')}`
+    // 构造表单数据
+    const formData = new FormData()
+    
+    // 添加基本字段
+    formData.append('name', form.value.name)
+    formData.append('contractAddress', form.value.contractAddress)
+    formData.append('description', form.value.description)
+    formData.append('owner', form.value.owner)
+    // 添加监管者地址（从用户钱包获取）
+    formData.append('regulatorAddress', storeUser.address)
+    
+    // 添加函数和参数数据
+    formData.append('functions', JSON.stringify(form.value.functions))
 
-    const newRule = {
-      ...form.value,
-      id: isEdit.value ? form.value.id : newId,
-      ruleId: isEdit.value ? form.value.ruleId : newRuleId,
-      regulatorAddress: '0x1234567890abcdef1234567890abcdef12345678',
-      status: 0,
-      createTime: new Date().toISOString()
-    }
-
+    let err, res
     if (isEdit.value) {
-      const index = tableData.value.findIndex(item => item.id === form.value.id)
-      if (index !== -1) {
-        tableData.value[index] = newRule
-      }
+      [err, res] = await updateRule(form.value.id, formData)
     } else {
-      tableData.value.push(newRule)
+      [err, res] = await addRule(formData)
     }
 
-    dialogVisible.value = false
-    ElMessage.success(isEdit.value ? '更新成功' : '添加成功')
+    if (!err && res.code === 200) {
+      dialogVisible.value = false
+      ElMessage.success(isEdit.value ? '更新成功' : '添加成功')
+      handleSearch() // 重新加载数据
+    } else {
+      ElMessage.error(err?.message || '操作失败')
+    }
   } catch (error) {
     console.error('操作失败:', error)
     ElMessage.error('操作失败，请重试')

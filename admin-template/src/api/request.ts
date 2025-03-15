@@ -14,7 +14,7 @@ class AdminRequset extends Request {
 
   constructor() {
     super({
-      baseURL: '/api',
+      baseURL: '/admin-template/api',
       timeout: 5000,
     });
   }

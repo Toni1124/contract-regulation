@@ -15,34 +15,11 @@ export const getRuleList = (params: {
   pageSize: number
   keyword?: string
 }) => {
-  // Mock data
-  const mockData = {
-    code: 200,
-    message: 'success',
-    data: {
-      list: [
-        {
-          id: 1,
-          name: '资金流向监控规则',
-          regulatorAddress: '0x1234567890abcdef1234567890abcdef12345678',
-          description: '监控资金流向，防止洗钱行为',
-          contractAddress: '0xabcdef1234567890abcdef1234567890abcdef12',
-          owner: 'super',
-          ruleId: 'RULE20240306001',
-          status: 1,
-          createTime: '2024-03-06 14:30:00'
-        }
-      ],
-      total: 1
-    }
-  }
-
-  return Promise.resolve(mockData)
-  // return request({
-  //   url: '/rules',
-  //   method: 'get',
-  //   params
-  // })
+  return request({
+    url: '/rules',
+    method: 'get',
+    params
+  })
 }
 
 /**
@@ -58,30 +35,14 @@ export const getRuleList = (params: {
  * @apiParam {File} [file] 规则文件
  */
 export const addRule = (data: FormData) => {
-  // Mock response
-  return Promise.resolve({
-    code: 200,
-    message: 'success',
-    data: {
-      id: 2,
-      name: data.get('name'),
-      regulatorAddress: '0x1234567890abcdef1234567890abcdef12345678',
-      description: data.get('description'),
-      contractAddress: data.get('contractAddress'),
-      owner: data.get('owner'),
-      ruleId: 'RULE20240306002',
-      status: 0,
-      createTime: new Date().toISOString()
+  return request({
+    url: '/rules',
+    method: 'post',
+    data,
+    headers: {
+      'Content-Type': 'multipart/form-data'
     }
   })
-  // return request({
-  //   url: '/rules',
-  //   method: 'post',
-  //   data,
-  //   headers: {
-  //     'Content-Type': 'multipart/form-data'
-  //   }
-  // })
 }
 
 /**
@@ -97,19 +58,14 @@ export const addRule = (data: FormData) => {
  * @apiParam {File} [file] 规则文件
  */
 export const updateRule = (id: number, data: FormData) => {
-  // Mock response
-  return Promise.resolve({
-    code: 200,
-    message: 'success'
+  return request({
+    url: `/rules/${id}`,
+    method: 'put',
+    data,
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
   })
-  // return request({
-  //   url: `/rules/${id}`,
-  //   method: 'put',
-  //   data,
-  //   headers: {
-  //     'Content-Type': 'multipart/form-data'
-  //   }
-  // })
 }
 
 /**
@@ -119,15 +75,10 @@ export const updateRule = (id: number, data: FormData) => {
  * @apiParam {Number} id 规则ID
  */
 export const deleteRule = (id: number) => {
-  // Mock response
-  return Promise.resolve({
-    code: 200,
-    message: 'success'
+  return request({
+    url: `/rules/${id}`,
+    method: 'delete'
   })
-  // return request({
-  //   url: `/rules/${id}`,
-  //   method: 'delete'
-  // })
 }
 
 /**
@@ -137,32 +88,9 @@ export const deleteRule = (id: number) => {
  * @apiParam {String} [keyword] 搜索关键词
  */
 export const getContractList = (params?: { keyword?: string }) => {
-  // Mock response
-  return Promise.resolve({
-    code: 200,
-    message: 'success',
-    data: {
-      list: [
-        {
-          id: 1,
-          name: 'TokenContract',
-          address: '0x1234567890abcdef1234567890abcdef12345678',
-          sourceCode: `
-contract TokenContract {
-    uint256 public totalSupply;
-    
-    function store(uint256 num) public {
-        totalSupply = num;
-    }
-}
-          `
-        }
-      ]
-    }
+  return request({
+    url: '/contracts',
+    method: 'get',
+    params
   })
-  // return request({
-  //   url: '/contracts',
-  //   method: 'get',
-  //   params
-  // })
 } 
