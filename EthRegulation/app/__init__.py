@@ -4,7 +4,7 @@ from flask_migrate import Migrate
 from flask_cors import CORS
 from app.extensions import db, migrate, ma
 from app.api.black_white_list import bp as black_white_list_bp
-from app.views.rule import bp as rule_bp
+from app.api.rule import bp as rule_bp
 from app.config import Config
 from app.api import contracts
 

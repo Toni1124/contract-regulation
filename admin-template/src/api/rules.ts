@@ -55,7 +55,7 @@ interface RuleData {
  */
 export const addRule = (data: RuleData) => {
   return request<RuleResponse>({
-    url: `${BASE_URL}/api/rules`,
+    url: `${BASE_URL}/rules`,
     method: 'post',
     data,
     headers: {
@@ -78,12 +78,9 @@ export const addRule = (data: RuleData) => {
  */
 export const updateRule = (id: number, data: any) => {
   return request({
-    url: `${BASE_URL}/api/rules/${id}`,
+    url: `${BASE_URL}/rules/${id}`,
     method: 'put',
-    data,
-    headers: {
-      'Content-Type': 'application/json'
-    }
+    data
   })
 }
 
@@ -95,7 +92,7 @@ export const updateRule = (id: number, data: any) => {
  */
 export const deleteRule = (id: number) => {
   return request({
-    url: `${BASE_URL}/api/rules/${id}`,
+    url: `${BASE_URL}/rules/${id}`,
     method: 'delete'
   })
 }
