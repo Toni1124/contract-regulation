@@ -1,4 +1,5 @@
-import request from './request'
+import request from '@/utils/request'
+import { BASE_URL } from './config'
 
 /**
  * @api {get} /api/rules 获取监管规则列表
@@ -59,7 +60,7 @@ export const addRule = (data: FormData) => {
  */
 export const updateRule = (id: number, data: FormData) => {
   return request({
-    url: `/rules/${id}`,
+    url: `${BASE_URL}/api/rules/${id}`,
     method: 'put',
     data,
     headers: {

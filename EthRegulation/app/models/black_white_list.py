@@ -1,5 +1,5 @@
 from datetime import datetime
-from app.extensions import db
+from app import db
 from app.constants.enums import ListType, Region, Organization, Operator
 from typing import Any
 
@@ -7,12 +7,12 @@ class BlackWhiteList(db.Model):
     __tablename__ = 'black_white_list'
     
     id = db.Column(db.Integer, primary_key=True)
-    address = db.Column(db.String(42), unique=True, nullable=False)
-    operate_time = db.Column(db.DateTime, default=datetime.now)
-    operator = db.Column(db.String(100), nullable=False)
+    address = db.Column(db.String(42), unique=True, nullable=False)  # 以太坊地址长度为42（包含0x前缀）
+    operate_time = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    operator = db.Column(db.String(50), nullable=False)
     type = db.Column(db.Integer, nullable=False)  # 1: 白名单, 2: 黑名单
     organization = db.Column(db.String(100), nullable=False)
-    region = db.Column(db.String(100), nullable=False)
+    region = db.Column(db.String(50), nullable=False)
 
     def __repr__(self) -> str:
         return f'<BlackWhiteList {self.address}>'

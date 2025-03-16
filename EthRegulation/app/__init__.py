@@ -1,10 +1,15 @@
 from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 from flask_cors import CORS
 from app.extensions import db, migrate, ma
 from app.api.black_white_list import bp as black_white_list_bp
 from app.utils.error_handlers import register_error_handlers
 from app.views.rule import bp as rule_bp
 from app.config import Config
+
+db = SQLAlchemy()
+migrate = Migrate()
 
 def create_app(config_class=Config):
     app = Flask(__name__)

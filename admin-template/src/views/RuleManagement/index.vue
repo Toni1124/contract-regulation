@@ -230,7 +230,7 @@
       <template #footer>
         <span class="dialog-footer">
           <el-button @click="dialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="submitForm">确定</el-button>
+          <el-button type="primary" @click="handleSubmit">确定</el-button>
         </span>
       </template>
     </el-dialog>
@@ -590,43 +590,40 @@ const handleContractSelect = (address: string) => {
   }
 }
 
-const submitForm = async () => {
+const handleSubmit = async () => {
+  if (!formRef.value) return
+  
   try {
-    if (form.value.functions.length === 0) {
-      ElMessage.warning('请至少添加一个函数规则')
-      return
-    }
-
-    // 构造表单数据
-    const formData = new FormData()
+    await formRef.value.validate()
     
-    // 添加基本字段
+    // 构建要发送的数据
+    const formData = new FormData()
     formData.append('name', form.value.name)
     formData.append('contractAddress', form.value.contractAddress)
     formData.append('description', form.value.description)
     formData.append('owner', form.value.owner)
-    // 添加监管者地址（从用户钱包获取）
-    formData.append('regulatorAddress', storeUser.address)
-    
-    // 添加函数和参数数据
     formData.append('functions', JSON.stringify(form.value.functions))
+    
+    console.log('Submitting data:', {
+      id: form.value.id,
+      formData: Object.fromEntries(formData.entries())
+    })
 
-    let err, res
-    if (isEdit.value) {
-      [err, res] = await updateRule(form.value.id, formData)
-    } else {
-      [err, res] = await addRule(formData)
-    }
+    const res = form.value.id 
+      ? await updateRule(form.value.id, formData)
+      : await addRule(formData)
 
-    if (!err && res.code === 200) {
+    console.log('Response:', res)
+
+    if (res.code === 200) {
+      ElMessage.success(form.value.id ? '更新成功' : '添加成功')
       dialogVisible.value = false
-      ElMessage.success(isEdit.value ? '更新成功' : '添加成功')
-      handleSearch() // 重新加载数据
+      await fetchData()
     } else {
-      ElMessage.error(err?.message || '操作失败')
+      ElMessage.error(res.message || '操作失败')
     }
   } catch (error) {
-    console.error('操作失败:', error)
+    console.error('提交失败:', error)
     ElMessage.error('操作失败，请重试')
   }
 }

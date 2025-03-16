@@ -55,10 +55,10 @@ export default defineConfig(async () => ({
   clearScreen: false,
   server: {
     proxy: {
-      '/admin-template/api': {
-        target: 'http://localhost:5000',
+      '/api': {
+        target: 'http://127.0.0.1:5000',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/admin-template\/api/, '/api')
+        rewrite: (path) => path.replace(/^\/api/, '/api')
       }
     },
   },
