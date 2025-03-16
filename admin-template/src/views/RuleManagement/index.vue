@@ -31,19 +31,71 @@
       style="width: 100%"
       v-loading="loading"
     >
-      <el-table-column type="index" label="序号" width="80" />
-      <el-table-column prop="name" label="规则名称" min-width="150" sortable :filters="getColumnFilters('name')" :filter-method="filterHandler" />
-      <el-table-column prop="regulatorAddress" label="监管账户地址" min-width="200" sortable :filters="getColumnFilters('regulatorAddress')" :filter-method="filterHandler" />
-      <el-table-column prop="description" label="简介" min-width="200" show-overflow-tooltip />
-      <el-table-column prop="contractAddress" label="被监管合约地址" min-width="200" sortable :filters="getColumnFilters('contractAddress')" :filter-method="filterHandler">
+      <el-table-column 
+        type="index" 
+        label="序号" 
+        width="80" 
+        :index="(index) => (currentPage - 1) * pageSize + index + 1"
+      />
+      
+      <el-table-column 
+        prop="contractAddress" 
+        label="被监管合约地址" 
+        min-width="200" 
+        sortable 
+        :filters="getColumnFilters('contractAddress')" 
+        :filter-method="filterHandler"
+      >
         <template #default="{ row }">
           <el-button link type="primary" @click="viewContract(row)">
             {{ row.contractAddress }}
           </el-button>
         </template>
       </el-table-column>
-      <el-table-column prop="owner" label="所属用户" min-width="120" sortable :filters="getColumnFilters('owner')" :filter-method="filterHandler" />
-      <el-table-column prop="ruleId" label="监管规则编号" min-width="150" sortable :filters="getColumnFilters('ruleId')" :filter-method="filterHandler" />
+
+      <el-table-column 
+        prop="ruleId" 
+        label="监管规则编号" 
+        min-width="150" 
+        sortable 
+        :filters="getColumnFilters('ruleId')" 
+        :filter-method="filterHandler" 
+      />
+
+      <el-table-column 
+        prop="name" 
+        label="规则名称" 
+        min-width="150" 
+        sortable 
+        :filters="getColumnFilters('name')" 
+        :filter-method="filterHandler" 
+      />
+      
+      <el-table-column 
+        prop="regulatorAddress" 
+        label="监管账户地址" 
+        min-width="200" 
+        sortable 
+        :filters="getColumnFilters('regulatorAddress')" 
+        :filter-method="filterHandler" 
+      />
+      
+      <el-table-column 
+        prop="description" 
+        label="简介" 
+        min-width="200" 
+        show-overflow-tooltip 
+      />
+      
+      <el-table-column 
+        prop="owner" 
+        label="所属用户" 
+        min-width="120" 
+        sortable 
+        :filters="getColumnFilters('owner')" 
+        :filter-method="filterHandler" 
+      />
+
       <el-table-column prop="status" label="状态" width="100" sortable :filters="[
         { text: '待审核', value: 0 },
         { text: '已上线', value: 1 },
@@ -55,11 +107,13 @@
           </el-tag>
         </template>
       </el-table-column>
+
       <el-table-column prop="createTime" label="创建时间" min-width="180" sortable>
         <template #default="{ row }">
           {{ formatDate(row.createTime) }}
         </template>
       </el-table-column>
+
       <el-table-column label="操作" width="200" fixed="right">
         <template #default="{ row }">
           <el-button link type="primary" @click="handleEdit(row)">编辑</el-button>
