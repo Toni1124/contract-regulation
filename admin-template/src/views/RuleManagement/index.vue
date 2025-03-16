@@ -300,18 +300,28 @@
 
         <!-- 右侧合约源码 -->
         <div v-if="selectedContract" class="contract-section">
-          <el-scrollbar height="calc(70vh - 100px)">
-            <div class="contract-header">
-              <h3>合约源码</h3>
-              <p class="contract-info">
-                <span>名称：{{ selectedContract.name }}</span>
-                <span>地址：{{ selectedContract.address }}</span>
-              </p>
-            </div>
-            <div class="source-code">
-              <pre class="language-solidity"><code>{{ selectedContract.sourceCode }}</code></pre>
-            </div>
-          </el-scrollbar>
+          <div class="contract-header">
+            <h3>合约信息</h3>
+            <p class="contract-info">
+              <span>名称：{{ selectedContractName || '未选择合约' }}</span>
+              <span>地址：{{ form.contractAddress || '未选择合约' }}</span>
+              <el-button 
+                type="primary" 
+                size="small"
+                @click="loadContractSource"
+                :loading="loadingSource"
+                :disabled="!form.contractAddress"
+              >
+                查看源码
+              </el-button>
+            </p>
+          </div>
+          <div v-if="showSourceCode" class="source-code">
+            <pre><code class="language-solidity">{{ contractSourceCode }}</code></pre>
+          </div>
+          <div v-else class="empty-source">
+            <el-empty description="点击上方按钮查看合约源码" />
+          </div>
         </div>
       </div>
 
@@ -450,7 +460,7 @@ import { ref, onMounted, nextTick, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Plus, Delete, Close } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
-import { getRuleList, addRule, updateRule, deleteRule, getContractList } from '@/api/rules'
+import { getRuleList, addRule, updateRule, deleteRule, getContractList, getRuleDetail, getContractDetail } from '@/api/rules'
 import useStoreUser from '@/store/user'
 
 const router = useRouter()
@@ -617,36 +627,43 @@ const handleAdd = () => {
   dialogVisible.value = true
 }
 
-const handleEdit = (row: any) => {
+const handleEdit = async (row: any) => {
   isEdit.value = true
-  isEditingAddress.value = false  // 重置编辑状态
-  
-  form.value = {
-    id: row.id,
-    name: row.name,
-    contractAddress: row.contractAddress,
-    regulatorAddress: row.regulatorAddress,
-    description: row.description,
-    owner: row.owner,
-    functions: row.functions?.map((func: any) => ({
-      name: func.name,
-      params: func.params?.map((param: any) => ({
-        name: param.name,
-        type: param.type,
-        condition: param.condition,
-        value: param.value
-      })) || []
-    })) || []
-  }
-  
-  console.log('Edit form data:', form.value)
+  isEditingAddress.value = false
   dialogVisible.value = true
   
-  // 加载合约详情
-  const contract = contracts.value.find(c => c.address === row.contractAddress)
-  if (contract) {
-    selectedContract.value = contract
-    selectedContractName.value = `${contract.name} (${contract.address})`
+  try {
+    // 设置基本表单数据
+    form.value = {
+      id: row.id,
+      name: row.name,
+      contractAddress: row.contractAddress,
+      regulatorAddress: row.regulatorAddress,
+      description: row.description,
+      owner: row.owner,
+      functions: row.functions || []
+    }
+    
+    // 查找并设置合约信息
+    const contract = contracts.value.find(c => c.address === row.contractAddress)
+    console.log('Found contract:', contract)
+    
+    if (contract) {
+      selectedContract.value = contract
+      selectedContractName.value = `${contract.name} (${contract.address})`
+      
+      // 更新可用函数列表
+      if (contract.abi?.functions) {
+        contractFunctions.value = contract.abi.functions.map(f => f.name)
+      }
+    }
+    
+    // 重置源码显示状态
+    showSourceCode.value = false
+    
+  } catch (error) {
+    console.error('设置表单数据失败:', error)
+    ElMessage.error('设置表单数据失败')
   }
 }
 
@@ -837,10 +854,18 @@ const filterHandler = (value: any, row: any, column: any) => {
 // 代码高亮函数
 const highlightCode = () => {
   nextTick(() => {
-    // @ts-ignore
-    if (window.Prism) {
-      // @ts-ignore
-      window.Prism.highlightAll()
+    if (typeof window.Prism !== 'undefined') {
+      try {
+        const codeElements = document.querySelectorAll('pre code')
+        codeElements.forEach((element) => {
+          window.Prism.highlightElement(element)
+        })
+      } catch (e) {
+        console.error('代码高亮失败:', e)
+      }
+    } else {
+      // 如果 Prism 未加载，尝试加载
+      loadPrismJS()
     }
   })
 }
@@ -869,6 +894,126 @@ const handleAddressEditComplete = () => {
 const selectAddress = (address: string) => {
   form.value.regulatorAddress = address
   showAddressSelector.value = false
+}
+
+// 新增的合约源码相关
+const loadingSource = ref(false)
+const showSourceCode = ref(false)
+const contractSourceCode = ref('')
+
+const loadContractSource = async () => {
+  if (!form.value.contractAddress) {
+    ElMessage.warning('未找到合约地址')
+    return
+  }
+
+  try {
+    loadingSource.value = true
+    showSourceCode.value = false
+    
+    const res = await getContractDetail(form.value.contractAddress)
+    
+    if (res.code === 200) {
+      // 格式化源码
+      const sourceCode = res.data.source_code || '// No source code available'
+      contractSourceCode.value = formatSourceCode(sourceCode)
+      showSourceCode.value = true
+      
+      nextTick(() => {
+        if (typeof window.Prism === 'undefined') {
+          loadPrismJS()
+        } else {
+          highlightCode()
+        }
+      })
+    } else {
+      ElMessage.error('获取合约源码失败')
+    }
+  } catch (error) {
+    console.error('获取合约源码失败:', error)
+    ElMessage.error('获取合约源码失败')
+  } finally {
+    loadingSource.value = false
+  }
+}
+
+// 添加源码格式化函数
+const formatSourceCode = (sourceCode: string): string => {
+  // 1. 移除开头和结尾的空白字符
+  let formattedCode = sourceCode.trim()
+  
+  // 2. 按行分割
+  const lines = formattedCode.split('\n')
+  
+  // 3. 处理每一行
+  formattedCode = lines
+    .map(line => {
+      // 移除每行开头的所有空白字符
+      const trimmedLine = line.trim()
+      
+      if (!trimmedLine) {
+        // 空行直接返回
+        return ''
+      }
+      
+      // 根据代码层级添加适当的缩进
+      if (trimmedLine.includes('contract') || trimmedLine.includes('pragma') || trimmedLine.includes('SPDX')) {
+        // 合约声明、pragma 和 license 声明不缩进
+        return trimmedLine
+      } else if (trimmedLine.startsWith('function')) {
+        // 函数声明缩进 4 个空格
+        return '    ' + trimmedLine
+      } else if (trimmedLine.startsWith('//')) {
+        // 注释缩进 4 个空格
+        return '    ' + trimmedLine
+      } else if (trimmedLine.includes('{') || trimmedLine.includes('}')) {
+        // 大括号缩进 4 个空格
+        return '    ' + trimmedLine
+      } else {
+        // 其他内容缩进 8 个空格
+        return '        ' + trimmedLine
+      }
+    })
+    .join('\n')
+  
+  return formattedCode
+}
+
+// 添加加载 Prism 的函数
+const loadPrismJS = () => {
+  // 检查是否已经加载
+  if (document.getElementById('prism-css') || document.getElementById('prism-js')) {
+    return
+  }
+  
+  // 加载 Prism CSS
+  const link = document.createElement('link')
+  link.id = 'prism-css'
+  link.rel = 'stylesheet'
+  link.href = 'https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css'
+  document.head.appendChild(link)
+  
+  // 加载 Prism JS
+  const script = document.createElement('script')
+  script.id = 'prism-js'
+  script.src = 'https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js'
+  script.onload = () => {
+    // 加载 Solidity 语言支持
+    const solidityScript = document.createElement('script')
+    solidityScript.src = 'https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-solidity.min.js'
+    solidityScript.onload = () => {
+      highlightCode()
+    }
+    document.head.appendChild(solidityScript)
+  }
+  document.head.appendChild(script)
+}
+
+// 添加类型声明
+declare global {
+  interface Window {
+    Prism: any
+  }
 }
 
 onMounted(async () => {
@@ -956,6 +1101,8 @@ onMounted(async () => {
     background-color: #f5f7fa;
     border-radius: 4px;
     overflow: hidden;  // 防止溢出
+    display: flex;
+    flex-direction: column;
 
     .contract-header {
       padding: 16px;
@@ -972,22 +1119,43 @@ onMounted(async () => {
         margin: 0;
         color: #606266;
         font-size: 14px;
+        
+        span {
+          display: block;
+          margin-bottom: 8px;
+        }
       }
     }
 
     .source-code {
       padding: 16px;
       background-color: #2d2d2d;
+      flex: 1;
+      overflow-y: auto;
       
       pre {
         margin: 0;
+        
         code {
           font-family: 'Consolas', 'Monaco', monospace;
           font-size: 14px;
           line-height: 1.5;
-          white-space: pre-wrap;  // 允许代码换行
+          white-space: pre-wrap;
+          tab-size: 4;
+          display: block;
+          color: #f8f8f2;  // 设置默认文本颜色
+          background: none;  // 移除默认背景色
         }
       }
+    }
+    
+    .empty-source {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #f5f7fa;
+      padding: 20px;
     }
   }
 }

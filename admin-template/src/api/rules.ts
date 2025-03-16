@@ -126,4 +126,20 @@ export const getContractList = (params?: { keyword?: string }) => {
     method: 'get',
     params
   })
+}
+
+// 获取规则详情
+export function getRuleDetail(id: number) {
+  return request({
+    url: `/api/rules/${id}`,
+    method: 'get'
+  })
+}
+
+// 添加获取合约详情的 API
+export function getContractDetail(address: string) {
+  return request({
+    url: `/api/contracts/${address}`,
+    method: 'get'
+  })
 } 
