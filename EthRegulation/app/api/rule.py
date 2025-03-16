@@ -4,6 +4,8 @@ from app.schemas.rule_new import RuleNewSchema  # 导入新Schema
 from app.extensions import db
 from datetime import datetime
 import logging
+import random
+from time import sleep
 
 # 设置日志
 logging.basicConfig(level=logging.DEBUG)
@@ -49,22 +51,48 @@ def get_rules():
 def create_rule():
     try:
         data = request.get_json()
+        
+        # 获取当前时间
+        current_time = datetime.now()
+        year = current_time.strftime('%y')
+        timestamp = current_time.strftime('%H%M')
+        date_key = current_time.strftime('%Y%m%d')
+        
+        # 获取合约地址后4位
+        contract_address = data['contractAddress']
+        contract_suffix = contract_address[-4:] if contract_address else 'XXXX'
+        
+        # 获取当天最大序号
+        today_rules = RuleNew.query.filter(
+            db.func.date(RuleNew.create_time) == db.func.date(current_time)
+        ).all()
+        sequence = str(len(today_rules) + 1).zfill(3)
+        
+        # 生成规则编号: R-年份-合约后4位-时间戳-序号
+        rule_number = f"R-{year}-{contract_suffix}-{timestamp}-{sequence}"
+        
+        # 创建新规则
         rule = RuleNew(
             name=data['name'],
-            contract_address=data['contractAddress'],
+            contract_address=contract_address,
             description=data.get('description'),
             owner=data['owner'],
-            functions=data['functions'],  # 直接存储JSON
-            regulator_address=data.get('regulatorAddress')
+            functions=data['functions'],
+            regulator_address=data.get('regulatorAddress'),
+            rule_number=rule_number,  # 设置新的规则编号
+            create_time=current_time
         )
         
         db.session.add(rule)
         db.session.commit()
         
+        # 使用 schema 序列化数据返回给前端
+        result = rule_schema.dump(rule)
+        
         return jsonify({
             'code': 200,
             'message': 'success',
-            'data': rule_schema.dump(rule)
+            'data': result  # 返回完整的规则数据，包含新生成的规则编号
         })
         
     except Exception as e:
