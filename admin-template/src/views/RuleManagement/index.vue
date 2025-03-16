@@ -145,139 +145,173 @@
       <div class="dialog-content">
         <!-- 左侧表单 -->
         <div class="form-section">
-          <el-form
-            ref="formRef"
-            :model="form"
-            :rules="rules"
-            label-width="120px"
-            class="rule-form"
-          >
-            <el-form-item label="规则名称" prop="name">
-              <el-input v-model="form.name" placeholder="请输入规则名称" />
-            </el-form-item>
-            
-            <el-form-item label="被监管合约" prop="contractAddress">
-              <el-input
-                v-model="selectedContractName"
-                placeholder="请选择合约"
-                readonly
-                @click="showContractSelector"
-              >
-                <template #append>
-                  <el-button @click="showContractSelector">选择合约</el-button>
-                </template>
-              </el-input>
-            </el-form-item>
+          <el-scrollbar height="calc(70vh - 100px)">
+            <el-form
+              ref="formRef"
+              :model="form"
+              :rules="rules"
+              label-width="120px"
+              class="rule-form"
+            >
+              <el-form-item label="规则名称" prop="name">
+                <el-input v-model="form.name" placeholder="请输入规则名称" />
+              </el-form-item>
+              
+              <el-form-item label="被监管合约" prop="contractAddress">
+                <el-input
+                  v-model="selectedContractName"
+                  placeholder="请选择合约"
+                  readonly
+                  :disabled="isEdit"
+                  @click="!isEdit && showContractSelector"
+                >
+                  <template #append>
+                    <el-button @click="showContractSelector" :disabled="isEdit">选择合约</el-button>
+                  </template>
+                </el-input>
+              </el-form-item>
 
-            <el-form-item label="简介" prop="description">
-              <el-input
-                v-model="form.description"
-                type="textarea"
-                :rows="3"
-                placeholder="请输入规则简介"
-              />
-            </el-form-item>
+              <el-form-item label="监管账户地址" prop="regulatorAddress">
+                <div class="regulator-address-container">
+                  <el-input
+                    v-model="form.regulatorAddress"
+                    placeholder="请输入监管账户地址"
+                    @focus="showAddressSelector = true"
+                  />
+                  <!-- 下拉选择区域 -->
+                  <div v-show="showAddressSelector" class="address-selector">
+                    <div class="selector-header">
+                      <span>选择已有监管账户</span>
+                      <el-icon class="close-icon" @click="showAddressSelector = false">
+                        <Close />
+                      </el-icon>
+                    </div>
+                    <el-scrollbar max-height="200px">
+                      <div 
+                        v-for="addr in existingRegulatorAddresses" 
+                        :key="addr"
+                        class="address-item"
+                        @click="selectAddress(addr)"
+                      >
+                        {{ addr }}
+                      </div>
+                    </el-scrollbar>
+                  </div>
+                </div>
+              </el-form-item>
 
-            <!-- 函数规则部分 -->
-            <div v-for="(func, funcIndex) in form.functions" :key="funcIndex" class="function-section">
-              <div class="function-header">
-                <h3>函数 {{ funcIndex + 1 }}</h3>
-                <el-button type="danger" circle @click="removeFunction(funcIndex)">
-                  <el-icon><Delete /></el-icon>
+              <el-form-item label="简介" prop="description">
+                <el-input
+                  v-model="form.description"
+                  type="textarea"
+                  :rows="3"
+                  placeholder="请输入规则简介"
+                />
+              </el-form-item>
+
+              <!-- 函数规则部分 -->
+              <div v-for="(func, funcIndex) in form.functions" :key="funcIndex" class="function-section">
+                <div class="function-header">
+                  <h3>函数 {{ funcIndex + 1 }}</h3>
+                  <el-button type="danger" circle @click="removeFunction(funcIndex)">
+                    <el-icon><Delete /></el-icon>
+                  </el-button>
+                </div>
+
+                <el-form-item :label="'函数名称'" :prop="'functions.' + funcIndex + '.name'">
+                  <el-select
+                    v-model="func.name"
+                    placeholder="请选择函数"
+                    style="width: 100%"
+                  >
+                    <el-option
+                      v-for="fn in contractFunctions"
+                      :key="fn"
+                      :label="fn"
+                      :value="fn"
+                    />
+                  </el-select>
+                </el-form-item>
+
+                <!-- 参数列表 -->
+                <div v-for="(param, paramIndex) in func.params" :key="paramIndex" class="param-item">
+                  <el-form-item 
+                    :label="'参数 ' + (paramIndex + 1)"
+                    :prop="'functions.' + funcIndex + '.params.' + paramIndex + '.value'"
+                  >
+                    <div class="param-row">
+                      <el-input
+                        v-model="param.name"
+                        placeholder="参数名称"
+                        style="width: 150px"
+                      />
+                      <el-select
+                        v-model="param.type"
+                        placeholder="参数类型"
+                        style="width: 120px"
+                      >
+                        <el-option label="uint256" value="uint256" />
+                        <el-option label="string" value="string" />
+                        <el-option label="address" value="address" />
+                        <el-option label="bool" value="bool" />
+                      </el-select>
+                      <el-select
+                        v-model="param.condition"
+                        placeholder="条件"
+                        style="width: 120px"
+                      >
+                        <el-option label="等于" value="=" />
+                        <el-option label="大于" value=">" />
+                        <el-option label="大于等于" value=">=" />
+                        <el-option label="小于" value="<" />
+                        <el-option label="小于等于" value="<=" />
+                        <el-option label="不等于" value="!=" />
+                        <el-option label="包含" value="includes" />
+                        <el-option label="不包含" value="not_includes" />
+                        <el-option label="在范围内" value="in_range" />
+                        <el-option label="不在范围内" value="not_in_range" />
+                      </el-select>
+                      <el-input
+                        v-model="param.value"
+                        placeholder="参数值"
+                        style="width: 200px"
+                      />
+                      <el-button type="danger" @click="removeParam(funcIndex, paramIndex)">
+                        <el-icon><Delete /></el-icon>
+                        删除
+                      </el-button>
+                    </div>
+                  </el-form-item>
+                </div>
+
+                <el-button type="primary" @click="addParam(funcIndex)">
+                  <el-icon><Plus /></el-icon>
+                  添加参数
                 </el-button>
               </div>
 
-              <el-form-item :label="'函数名称'" :prop="'functions.' + funcIndex + '.name'">
-                <el-select
-                  v-model="func.name"
-                  placeholder="请选择函数"
-                  style="width: 100%"
-                >
-                  <el-option
-                    v-for="fn in contractFunctions"
-                    :key="fn"
-                    :label="fn"
-                    :value="fn"
-                  />
-                </el-select>
-              </el-form-item>
-
-              <!-- 参数列表 -->
-              <div v-for="(param, paramIndex) in func.params" :key="paramIndex" class="param-item">
-                <el-form-item 
-                  :label="'参数 ' + (paramIndex + 1)"
-                  :prop="'functions.' + funcIndex + '.params.' + paramIndex + '.value'"
-                >
-                  <div class="param-row">
-                    <el-input
-                      v-model="param.name"
-                      placeholder="参数名称"
-                      style="width: 150px"
-                    />
-                    <el-select
-                      v-model="param.type"
-                      placeholder="参数类型"
-                      style="width: 120px"
-                    >
-                      <el-option label="uint256" value="uint256" />
-                      <el-option label="string" value="string" />
-                      <el-option label="address" value="address" />
-                      <el-option label="bool" value="bool" />
-                    </el-select>
-                    <el-select
-                      v-model="param.condition"
-                      placeholder="条件"
-                      style="width: 120px"
-                    >
-                      <el-option label="等于" value="=" />
-                      <el-option label="大于" value=">" />
-                      <el-option label="大于等于" value=">=" />
-                      <el-option label="小于" value="<" />
-                      <el-option label="小于等于" value="<=" />
-                      <el-option label="不等于" value="!=" />
-                      <el-option label="包含" value="includes" />
-                      <el-option label="不包含" value="not_includes" />
-                      <el-option label="在范围内" value="in_range" />
-                      <el-option label="不在范围内" value="not_in_range" />
-                    </el-select>
-                    <el-input
-                      v-model="param.value"
-                      placeholder="参数值"
-                      style="width: 200px"
-                    />
-                    <el-button type="danger" @click="removeParam(funcIndex, paramIndex)">
-                      <el-icon><Delete /></el-icon>
-                      删除
-                    </el-button>
-                  </div>
-                </el-form-item>
-              </div>
-
-              <el-button type="primary" @click="addParam(funcIndex)">
+              <el-button type="primary" @click="addFunction">
                 <el-icon><Plus /></el-icon>
-                添加参数
+                添加函数
               </el-button>
-            </div>
-
-            <el-button type="primary" @click="addFunction">
-              <el-icon><Plus /></el-icon>
-              添加函数
-            </el-button>
-          </el-form>
+            </el-form>
+          </el-scrollbar>
         </div>
 
         <!-- 右侧合约源码 -->
         <div v-if="selectedContract" class="contract-section">
-          <div class="contract-header">
-            <h3>合约源码</h3>
-            <p class="contract-info">
-              <span>名称：{{ selectedContract.name }}</span>
-              <span>地址：{{ selectedContract.address }}</span>
-            </p>
-          </div>
-          <div class="source-code">
-            <pre class="language-solidity"><code>{{ selectedContract.sourceCode }}</code></pre>
-          </div>
+          <el-scrollbar height="calc(70vh - 100px)">
+            <div class="contract-header">
+              <h3>合约源码</h3>
+              <p class="contract-info">
+                <span>名称：{{ selectedContract.name }}</span>
+                <span>地址：{{ selectedContract.address }}</span>
+              </p>
+            </div>
+            <div class="source-code">
+              <pre class="language-solidity"><code>{{ selectedContract.sourceCode }}</code></pre>
+            </div>
+          </el-scrollbar>
         </div>
       </div>
 
@@ -412,9 +446,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, nextTick, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Search, Plus, Delete } from '@element-plus/icons-vue'
+import { Search, Plus, Delete, Close } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import { getRuleList, addRule, updateRule, deleteRule, getContractList } from '@/api/rules'
 import useStoreUser from '@/store/user'
@@ -437,12 +471,15 @@ const contractDialogVisible = ref(false)
 const selectedContract = ref<any>(null)
 const isEdit = ref(false)
 const contractFunctions = ref(['transfer', 'mint', 'trade'])
+const isEditingAddress = ref(false)
+const showAddressSelector = ref(false)
 
 // 表单数据
 const form = ref({
   id: '',
   name: '',
   contractAddress: '',
+  regulatorAddress: '',
   description: '',
   owner: 'super',
   functions: [] as Array<{
@@ -460,6 +497,14 @@ const form = ref({
 const rules = {
   name: [{ required: true, message: '请输入规则名称', trigger: 'blur' }],
   contractAddress: [{ required: true, message: '请选择合约', trigger: 'change' }],
+  regulatorAddress: [
+    { required: true, message: '请输入监管账户地址', trigger: 'blur' },
+    { 
+      pattern: /^0x[0-9a-fA-F]{40}$/, 
+      message: '请输入有效的以太坊地址', 
+      trigger: 'blur' 
+    }
+  ],
   description: [{ required: true, message: '请输入规则简介', trigger: 'blur' }]
 }
 
@@ -549,12 +594,14 @@ const handleCurrentChange = async (val: number) => {
 
 const handleAdd = () => {
   isEdit.value = false
+  isEditingAddress.value = false  // 重置编辑状态
   
   // 重置表单数据
   form.value = {
     id: '',
     name: '',
     contractAddress: '',
+    regulatorAddress: '',
     description: '',
     owner: storeUser.userInfo?.username || 'super', // 使用当前登录用户名
     functions: [{  // 默认添加一个空函数
@@ -572,19 +619,18 @@ const handleAdd = () => {
 
 const handleEdit = (row: any) => {
   isEdit.value = true
+  isEditingAddress.value = false  // 重置编辑状态
   
-  // 格式化数据以匹配后端模型结构，保留 ID
   form.value = {
     id: row.id,
     name: row.name,
     contractAddress: row.contractAddress,
+    regulatorAddress: row.regulatorAddress,
     description: row.description,
     owner: row.owner,
     functions: row.functions?.map((func: any) => ({
-      id: func.id, // 保留函数 ID
       name: func.name,
       params: func.params?.map((param: any) => ({
-        id: param.id, // 保留参数 ID
         name: param.name,
         type: param.type,
         condition: param.condition,
@@ -688,10 +734,10 @@ const handleSubmit = async () => {
   try {
     await formRef.value.validate()
     
-    // 构造提交数据
     const submitData = {
       name: form.value.name,
       contractAddress: form.value.contractAddress,
+      regulatorAddress: form.value.regulatorAddress,
       description: form.value.description,
       owner: form.value.owner,
       functions: form.value.functions.map(func => ({
@@ -707,17 +753,18 @@ const handleSubmit = async () => {
 
     let res
     if (isEdit.value) {
-      // 编辑模式
+      // 编辑模式，移除 contractAddress
+      delete submitData.contractAddress
       res = await updateRule(Number(form.value.id), submitData)
     } else {
-      // 新增模式
+      // 新增模式，包含所有字段
       res = await addRule(submitData)
     }
 
     if (res.code === 200) {
       ElMessage.success(isEdit.value ? '更新成功' : '添加成功')
       dialogVisible.value = false
-      await handleSearch() // 刷新列表数据
+      await handleSearch()
     } else {
       ElMessage.error(res.message || '操作失败')
     }
@@ -798,6 +845,32 @@ const highlightCode = () => {
   })
 }
 
+// 删除原有的 commonRegulatorAddresses 定义，替换为：
+const existingRegulatorAddresses = computed(() => {
+  // 从表格数据中提取不重复的监管账户地址
+  return Array.from(new Set(tableData.value.map(item => item.regulatorAddress)))
+    .filter(addr => addr) // 过滤掉空值
+})
+
+// 添加编辑地址的处理方法
+const handleEditAddress = () => {
+  isEditingAddress.value = true
+}
+
+const handleAddressEditComplete = () => {
+  isEditingAddress.value = false
+  // 验证地址格式
+  if (form.value.regulatorAddress && !/^0x[0-9a-fA-F]{40}$/.test(form.value.regulatorAddress)) {
+    ElMessage.warning('请输入有效的以太坊地址')
+    form.value.regulatorAddress = ''
+  }
+}
+
+const selectAddress = (address: string) => {
+  form.value.regulatorAddress = address
+  showAddressSelector.value = false
+}
+
 onMounted(async () => {
   handleSearch()
   // 获取合约列表
@@ -819,6 +892,14 @@ onMounted(async () => {
     console.error('获取合约列表失败:', error)
     ElMessage.error('获取合约列表失败')
   }
+
+  // 添加点击外部关闭下拉框的处理
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement
+    if (!target.closest('.regulator-address-container')) {
+      showAddressSelector.value = false
+    }
+  })
 })
 </script>
 
@@ -858,23 +939,29 @@ onMounted(async () => {
 .dialog-content {
   display: flex;
   gap: 20px;
-  max-height: 70vh;
-  overflow-y: auto;
-
+  height: 70vh;  // 固定高度
+  
   .form-section {
     flex: 1;
     min-width: 600px;
+    overflow: hidden;  // 防止溢出
+    
+    .rule-form {
+      padding: 20px;
+    }
   }
 
   .contract-section {
     width: 400px;
     background-color: #f5f7fa;
-    padding: 16px;
     border-radius: 4px;
+    overflow: hidden;  // 防止溢出
 
     .contract-header {
-      margin-bottom: 16px;
-
+      padding: 16px;
+      background-color: #fff;
+      border-bottom: 1px solid #dcdfe6;
+      
       h3 {
         margin: 0 0 8px;
         font-size: 16px;
@@ -885,27 +972,20 @@ onMounted(async () => {
         margin: 0;
         color: #606266;
         font-size: 14px;
-
-        span {
-          display: block;
-          margin-bottom: 4px;
-        }
       }
     }
 
     .source-code {
-      background-color: #2d2d2d;
       padding: 16px;
-      border-radius: 4px;
-      max-height: calc(100vh - 300px);
-      overflow-y: auto;
-
+      background-color: #2d2d2d;
+      
       pre {
         margin: 0;
         code {
           font-family: 'Consolas', 'Monaco', monospace;
           font-size: 14px;
           line-height: 1.5;
+          white-space: pre-wrap;  // 允许代码换行
         }
       }
     }
@@ -917,19 +997,7 @@ onMounted(async () => {
   padding: 16px;
   border: 1px solid #dcdfe6;
   border-radius: 4px;
-
-  .function-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-
-    h3 {
-      margin: 0;
-      font-size: 16px;
-      font-weight: 500;
-    }
-  }
+  background-color: #fff;  // 添加背景色
 }
 
 .param-item {
@@ -937,8 +1005,22 @@ onMounted(async () => {
 
   .param-row {
     display: flex;
+    flex-wrap: wrap;  // 添加换行
     gap: 10px;
     align-items: center;
+
+    // 设置每个输入框的宽度
+    .el-input,
+    .el-select {
+      flex: 1;
+      min-width: 120px;  // 设置最小宽度
+      max-width: 200px;  // 设置最大宽度，防止拉伸过长
+    }
+
+    // 删除按钮样式
+    .el-button {
+      flex-shrink: 0;  // 防止按钮被压缩
+    }
   }
 }
 
@@ -1043,6 +1125,51 @@ onMounted(async () => {
     margin-top: 16px;
     display: flex;
     justify-content: flex-end;
+  }
+}
+
+.regulator-address-container {
+  position: relative;
+  width: 100%;
+
+  .address-selector {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 4px;
+    background: white;
+    border: 1px solid #dcdfe6;
+    border-radius: 4px;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+    z-index: 100;
+
+    .selector-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      border-bottom: 1px solid #ebeef5;
+      
+      .close-icon {
+        cursor: pointer;
+        color: #909399;
+        &:hover {
+          color: #409EFF;
+        }
+      }
+    }
+
+    .address-item {
+      padding: 8px 12px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      
+      &:hover {
+        background-color: #f5f7fa;
+        color: #409EFF;
+      }
+    }
   }
 }
 </style> 
