@@ -219,18 +219,32 @@
                 </div>
 
                 <el-form-item :label="'函数名称'" :prop="'functions.' + funcIndex + '.name'">
-                  <el-select
-                    v-model="func.name"
-                    placeholder="请选择函数"
-                    style="width: 100%"
-                  >
-                    <el-option
-                      v-for="fn in contractFunctions"
-                      :key="fn"
-                      :label="fn"
-                      :value="fn"
+                  <div class="function-name-container">
+                    <el-input
+                      v-model="func.name"
+                      placeholder="请选择或输入函数名称"
+                      @focus="showFunctionSelector = true"
                     />
-                  </el-select>
+                    <!-- 函数名称下拉选择区域 -->
+                    <div v-show="showFunctionSelector" class="function-selector">
+                      <div class="selector-header">
+                        <span>选择合约函数</span>
+                        <el-icon class="close-icon" @click="showFunctionSelector = false">
+                          <Close />
+                        </el-icon>
+                      </div>
+                      <el-scrollbar max-height="200px">
+                        <div 
+                          v-for="name in contractFunctions" 
+                          :key="name"
+                          class="function-item"
+                          @click="selectFunction(funcIndex, name)"
+                        >
+                          {{ name }}
+                        </div>
+                      </el-scrollbar>
+                    </div>
+                  </div>
                 </el-form-item>
 
                 <!-- 参数列表 -->
@@ -480,9 +494,10 @@ const dialogVisible = ref(false)
 const contractDialogVisible = ref(false)
 const selectedContract = ref<any>(null)
 const isEdit = ref(false)
-const contractFunctions = ref(['transfer', 'mint', 'trade'])
+const contractFunctions = ref<string[]>([])
 const isEditingAddress = ref(false)
 const showAddressSelector = ref(false)
+const showFunctionSelector = ref(false)
 
 // 表单数据
 const form = ref({
@@ -821,20 +836,82 @@ const handleContractPageChange = (val: number) => {
   contractPage.value = val
 }
 
-const selectContract = (contract: any) => {
-  form.value.contractAddress = contract.address
-  selectedContractName.value = `${contract.name} (${contract.address})`
-  selectedContract.value = contract
-  contractSelectorVisible.value = false
-  highlightCode()
+const selectContract = async (contract: any) => {
+  try {
+    // 如果选择了不同的合约，清空之前的源码
+    if (form.value.contractAddress !== contract.address) {
+      showSourceCode.value = false
+      contractSourceCode.value = ''
+    }
+    
+    // 设置新的合约信息
+    form.value.contractAddress = contract.address
+    selectedContractName.value = `${contract.name} (${contract.address})`
+    selectedContract.value = contract
+    
+    // 获取合约源码并解析函数
+    const res = await getContractDetail(contract.address)
+    if (res.code === 200 && res.data) {
+      // 解析源码中的函数名称
+      contractFunctions.value = parseFunctionsFromSource(res.data.source_code)
+    }
+    
+    contractSelectorVisible.value = false
+  } catch (error) {
+    console.error('获取合约详情失败:', error)
+    ElMessage.error('获取合约详情失败')
+  }
+}
+
+// 修改解析函数，只获取函数名
+const parseFunctionsFromSource = (sourceCode: string): string[] => {
+  const functions: string[] = []
+  const lines = sourceCode.split('\n')
+  
+  for (const line of lines) {
+    // 只匹配函数名称
+    const match = line.trim().match(/function\s+(\w+)\s*\(/)
+    if (match && match[1]) {
+      functions.push(match[1])
+    }
+  }
+  
+  return functions
 }
 
 // 合约预览相关
 const previewingContract = ref<any>(null)
 
-const previewContract = (contract: any) => {
-  previewingContract.value = contract
-  highlightCode()
+const previewContract = async (contract: any) => {
+  try {
+    // 先设置预览的合约基本信息（不包含源码）
+    previewingContract.value = { ...contract, sourceCode: '加载中...' }
+    
+    // 调用 API 获取最新的合约源码
+    if (contract.address) {
+      const res = await getContractDetail(contract.address)
+      
+      if (res.code === 200 && res.data) {
+        // 更新合约源码
+        previewingContract.value = {
+          ...previewingContract.value,
+          sourceCode: formatSourceCode(res.data.source_code || '// No source code available')
+        }
+        
+        // 应用代码高亮
+        nextTick(() => {
+          highlightCode()
+        })
+      } else {
+        previewingContract.value.sourceCode = '// 获取源码失败'
+        console.error('获取合约源码失败:', res.message)
+      }
+    }
+  } catch (error) {
+    previewingContract.value.sourceCode = '// 获取源码失败'
+    console.error('预览合约源码失败:', error)
+    ElMessage.error('获取合约源码失败')
+  }
 }
 
 // 表格筛选相关
@@ -1016,6 +1093,12 @@ declare global {
   }
 }
 
+// 添加选择函数的方法
+const selectFunction = (funcIndex: number, name: string) => {
+  form.value.functions[funcIndex].name = name
+  showFunctionSelector.value = false
+}
+
 onMounted(async () => {
   handleSearch()
   // 获取合约列表
@@ -1043,6 +1126,14 @@ onMounted(async () => {
     const target = e.target as HTMLElement
     if (!target.closest('.regulator-address-container')) {
       showAddressSelector.value = false
+    }
+  })
+
+  // 添加点击外部关闭函数选择器的处理
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement
+    if (!target.closest('.function-name-container')) {
+      showFunctionSelector.value = false
     }
   })
 })
@@ -1329,6 +1420,51 @@ onMounted(async () => {
     }
 
     .address-item {
+      padding: 8px 12px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      
+      &:hover {
+        background-color: #f5f7fa;
+        color: #409EFF;
+      }
+    }
+  }
+}
+
+.function-name-container {
+  position: relative;
+  width: 100%;
+
+  .function-selector {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 4px;
+    background: white;
+    border: 1px solid #dcdfe6;
+    border-radius: 4px;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+    z-index: 100;
+
+    .selector-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      border-bottom: 1px solid #ebeef5;
+      
+      .close-icon {
+        cursor: pointer;
+        color: #909399;
+        &:hover {
+          color: #409EFF;
+        }
+      }
+    }
+
+    .function-item {
       padding: 8px 12px;
       cursor: pointer;
       transition: background-color 0.3s;
