@@ -144,7 +144,7 @@ interface ListParams {
 // 获取列表
 export const getList = (params: ListParams) => {
   return request<ListResponse>({
-    url: `${BASE_URL}/api/black-white-list`,
+    url: '/api/black-white-list',
     method: 'get',
     params
   })
@@ -159,7 +159,7 @@ export const addItem = (data: {
   region: string
 }) => {
   return request<BlackWhiteListItem | ErrorResponse>({
-    url: `${BASE_URL}/api/black-white-list`,
+    url: '/api/black-white-list',
     method: 'post',
     data
   })
@@ -180,15 +180,8 @@ export const updateItem = (id: number, data: UpdateItemData) => {
     throw new Error('Invalid ID');
   }
   
-  // 打印请求信息
-  console.log('Update request:', {
-    url: `${BASE_URL}/api/black-white-list/${id}`,
-    method: 'put',
-    data
-  })
-
   return request<BlackWhiteListItem | ErrorResponse>({
-    url: `${BASE_URL}/api/black-white-list/${id}`,
+    url: `/api/black-white-list/${id}`,
     method: 'put',
     data
   })
@@ -197,7 +190,7 @@ export const updateItem = (id: number, data: UpdateItemData) => {
 // 删除
 export const deleteItem = (id: number) => {
   return request<null>({
-    url: `${BASE_URL}/api/black-white-list/${id}`,
+    url: `/api/black-white-list/${id}`,
     method: 'delete'
   })
 }

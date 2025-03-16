@@ -362,7 +362,7 @@ import { ref, onMounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Plus, Delete } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
-import { getRuleList, addRule, updateRule, deleteRule } from '@/api/rules'
+import { getRuleList, addRule, updateRule, deleteRule, getContractList } from '@/api/rules'
 import useStoreUser from '@/store/user'
 
 const router = useRouter()
@@ -458,6 +458,13 @@ const handleSearch = async () => {
     if (res.code === 200) {  // 移除 res.data
       tableData.value = res.data.list
       total.value = res.data.total
+      
+      // 如果当前页大于最大页数，跳转到最后一页
+      const maxPage = Math.ceil(total.value / pageSize.value)
+      if (currentPage.value > maxPage && maxPage > 0) {
+        currentPage.value = maxPage
+        await handleSearch() // 重新加载数据
+      }
     } else {
       ElMessage.error(res.message || '获取数据失败')
     }
@@ -469,50 +476,44 @@ const handleSearch = async () => {
   }
 }
 
-const handleReset = () => {
+const handleReset = async () => {
   searchQuery.value = ''
   currentPage.value = 1
-  handleSearch()
+  await handleSearch()
 }
 
-const handleSizeChange = (val: number) => {
+const handleSizeChange = async (val: number) => {
   pageSize.value = val
-  handleSearch()
+  currentPage.value = 1 // 切换每页条数时重置为第一页
+  await handleSearch()
 }
 
-const handleCurrentChange = (val: number) => {
+const handleCurrentChange = async (val: number) => {
   currentPage.value = val
-  handleSearch()
+  await handleSearch()
 }
 
 const handleAdd = () => {
   isEdit.value = false
   
-  // 默认选择第一个合约
-  const defaultContract = contracts.value[0]
-  
+  // 重置表单数据
   form.value = {
     id: '',
     name: '',
-    contractAddress: defaultContract.address,
+    contractAddress: '',
     description: '',
-    owner: 'super',
+    owner: storeUser.userInfo?.username || 'super', // 使用当前登录用户名
     functions: [{  // 默认添加一个空函数
       name: '',
       params: []
     }]
   }
   
-  // 设置选中的合约名称和预览
-  selectedContractName.value = `${defaultContract.name} (${defaultContract.address})`
-  selectedContract.value = defaultContract
+  // 清空选中的合约
+  selectedContract.value = null
+  selectedContractName.value = ''
   
   dialogVisible.value = true
-  
-  // 触发代码高亮
-  nextTick(() => {
-    highlightCode()
-  })
 }
 
 const handleEdit = (row: any) => {
@@ -570,15 +571,24 @@ const handleDelete = async (row: any) => {
       }
     )
     
-    const [err, res] = await deleteRule(row.id)
-    if (!err && res.code === 200) {
+    const res = await deleteRule(row.id)
+    if (res.code === 200) {
       ElMessage.success('删除成功')
-      handleSearch() // 重新加载数据
+      
+      // 如果当前页只有一条数据，且不是第一页，则跳转到上一页
+      if (tableData.value.length === 1 && currentPage.value > 1) {
+        currentPage.value--
+      }
+      
+      await handleSearch() // 刷新页面数据
     } else {
-      ElMessage.error(err?.message || '删除失败')
+      ElMessage.error(res.message || '删除失败')
     }
   } catch (error) {
-    console.error('删除失败:', error)
+    if (error !== 'cancel') {
+      console.error('删除失败:', error)
+      ElMessage.error('删除失败，请重试')
+    }
   }
 }
 
@@ -624,18 +634,15 @@ const handleSubmit = async () => {
   try {
     await formRef.value.validate()
     
-    // 构建要提交的数据
+    // 构造提交数据
     const submitData = {
       name: form.value.name,
-      regulatorAddress: form.value.regulatorAddress,
       contractAddress: form.value.contractAddress,
       description: form.value.description,
       owner: form.value.owner,
       functions: form.value.functions.map(func => ({
-        id: func.id, // 编辑时包含ID
         name: func.name,
         params: func.params.map(param => ({
-          id: param.id, // 编辑时包含ID
           name: param.name,
           type: param.type,
           condition: param.condition,
@@ -643,20 +650,20 @@ const handleSubmit = async () => {
         }))
       }))
     }
-    
-    console.log('Submitting data:', submitData)
 
     let res
-    if (form.value.id) {
+    if (isEdit.value) {
+      // 编辑模式
       res = await updateRule(Number(form.value.id), submitData)
     } else {
+      // 新增模式
       res = await addRule(submitData)
     }
 
     if (res.code === 200) {
-      ElMessage.success(form.value.id ? '更新成功' : '添加成功')
+      ElMessage.success(isEdit.value ? '更新成功' : '添加成功')
       dialogVisible.value = false
-      handleSearch()
+      await handleSearch() // 刷新列表数据
     } else {
       ElMessage.error(res.message || '操作失败')
     }
@@ -737,8 +744,27 @@ const highlightCode = () => {
   })
 }
 
-onMounted(() => {
+onMounted(async () => {
   handleSearch()
+  // 获取合约列表
+  try {
+    const res = await getContractList()
+    console.log('Contract list response:', res) // 添加日志
+    if (res.code === 200) {
+      contracts.value = res.data.list
+      filteredContracts.value = res.data.list
+      
+      // 更新可用函数列表
+      if (selectedContract.value) {
+        contractFunctions.value = selectedContract.value.abi?.functions?.map(f => f.name) || []
+      }
+    } else {
+      ElMessage.error(res.message || '获取合约列表失败')
+    }
+  } catch (error) {
+    console.error('获取合约列表失败:', error)
+    ElMessage.error('获取合约列表失败')
+  }
 })
 </script>
 

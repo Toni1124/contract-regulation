@@ -6,6 +6,7 @@ from app.extensions import db, migrate, ma
 from app.api.black_white_list import bp as black_white_list_bp
 from app.views.rule import bp as rule_bp
 from app.config import Config
+from app.api import contracts
 
 def create_app(config_class=Config):
     app = Flask(__name__)
@@ -30,5 +31,6 @@ def create_app(config_class=Config):
     # Register blueprints
     app.register_blueprint(black_white_list_bp)
     app.register_blueprint(rule_bp)
+    app.register_blueprint(contracts.bp, url_prefix='/api')
 
     return app 

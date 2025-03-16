@@ -17,7 +17,7 @@ export const getRuleList = (params: {
   keyword?: string
 }) => {
   return request({
-    url: `${BASE_URL}/api/rules`,
+    url: `${BASE_URL}/rules`,
     method: 'get',
     params
   })
@@ -32,20 +32,29 @@ interface RuleResponse {
   }
 }
 
+interface RuleData {
+  name: string
+  contractAddress: string
+  description: string
+  owner: string
+  functions: Array<{
+    name: string
+    params: Array<{
+      name: string
+      type: string
+      condition: string
+      value: string
+    }>
+  }>
+}
+
 /**
  * @api {post} /api/rules 添加监管规则
  * @apiName AddRule
  * @apiGroup Rules
- * @apiParam {String} name 规则名称
- * @apiParam {String} contractAddress 合约地址
- * @apiParam {String} [description] 规则描述
- * @apiParam {String} owner 所属用户
- * @apiParam {String} functionName 函数名称
- * @apiParam {Object[]} parameters 函数参数列表
- * @apiParam {File} [file] 规则文件
  */
-export const addRule = (data: any) => {
-  return request({
+export const addRule = (data: RuleData) => {
+  return request<RuleResponse>({
     url: `${BASE_URL}/api/rules`,
     method: 'post',
     data,
@@ -91,6 +100,23 @@ export const deleteRule = (id: number) => {
   })
 }
 
+interface ContractResponse {
+  code: number
+  message: string
+  data: {
+    list: Array<{
+      id: number
+      name: string
+      address: string
+      source_code: string
+      abi: any
+      create_time: string
+      status: number
+    }>
+    total: number
+  }
+}
+
 /**
  * @api {get} /api/contracts 获取已部署合约列表
  * @apiName GetContractList
@@ -98,8 +124,8 @@ export const deleteRule = (id: number) => {
  * @apiParam {String} [keyword] 搜索关键词
  */
 export const getContractList = (params?: { keyword?: string }) => {
-  return request({
-    url: '/contracts',
+  return request<ContractResponse>({
+    url: '/api/contracts',
     method: 'get',
     params
   })
