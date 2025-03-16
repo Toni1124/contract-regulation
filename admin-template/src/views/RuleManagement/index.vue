@@ -447,21 +447,23 @@ const formatDate = (dateStr: string) => {
 const handleSearch = async () => {
   loading.value = true
   try {
-    const [err, res] = await getRuleList({
+    const res = await getRuleList({
       page: currentPage.value,
       pageSize: pageSize.value,
       keyword: searchQuery.value
     })
-    if (!err && res.code === 200) {
+    
+    console.log('API Response:', res)
+    
+    if (res.code === 200) {  // 移除 res.data
       tableData.value = res.data.list
       total.value = res.data.total
     } else {
-      ElMessage.error(err?.message || '获取数据失败')
-      /* 注释掉 Mock 数据回退
-      tableData.value = mockData
-      total.value = mockData.length
-      */
+      ElMessage.error(res.message || '获取数据失败')
     }
+  } catch (error) {
+    console.error('获取数据失败:', error)
+    ElMessage.error('获取数据失败')
   } finally {
     loading.value = false
   }
@@ -515,13 +517,35 @@ const handleAdd = () => {
 
 const handleEdit = (row: any) => {
   isEdit.value = true
-  form.value = JSON.parse(JSON.stringify(row))
+  
+  // 格式化数据以匹配后端模型结构，保留 ID
+  form.value = {
+    id: row.id,
+    name: row.name,
+    contractAddress: row.contractAddress,
+    description: row.description,
+    owner: row.owner,
+    functions: row.functions?.map((func: any) => ({
+      id: func.id, // 保留函数 ID
+      name: func.name,
+      params: func.params?.map((param: any) => ({
+        id: param.id, // 保留参数 ID
+        name: param.name,
+        type: param.type,
+        condition: param.condition,
+        value: param.value
+      })) || []
+    })) || []
+  }
+  
+  console.log('Edit form data:', form.value)
   dialogVisible.value = true
+  
   // 加载合约详情
   const contract = contracts.value.find(c => c.address === row.contractAddress)
   if (contract) {
     selectedContract.value = contract
-    highlightCode()
+    selectedContractName.value = `${contract.name} (${contract.address})`
   }
 }
 
@@ -590,35 +614,49 @@ const handleContractSelect = (address: string) => {
   }
 }
 
+// 添加 formRef 定义
+const formRef = ref()
+
+// 修改 handleSubmit 函数，在提交时包含 ID
 const handleSubmit = async () => {
   if (!formRef.value) return
   
   try {
     await formRef.value.validate()
     
-    // 构建要发送的数据
-    const formData = new FormData()
-    formData.append('name', form.value.name)
-    formData.append('contractAddress', form.value.contractAddress)
-    formData.append('description', form.value.description)
-    formData.append('owner', form.value.owner)
-    formData.append('functions', JSON.stringify(form.value.functions))
+    // 构建要提交的数据
+    const submitData = {
+      name: form.value.name,
+      regulatorAddress: form.value.regulatorAddress,
+      contractAddress: form.value.contractAddress,
+      description: form.value.description,
+      owner: form.value.owner,
+      functions: form.value.functions.map(func => ({
+        id: func.id, // 编辑时包含ID
+        name: func.name,
+        params: func.params.map(param => ({
+          id: param.id, // 编辑时包含ID
+          name: param.name,
+          type: param.type,
+          condition: param.condition,
+          value: param.value
+        }))
+      }))
+    }
     
-    console.log('Submitting data:', {
-      id: form.value.id,
-      formData: Object.fromEntries(formData.entries())
-    })
+    console.log('Submitting data:', submitData)
 
-    const res = form.value.id 
-      ? await updateRule(form.value.id, formData)
-      : await addRule(formData)
-
-    console.log('Response:', res)
+    let res
+    if (form.value.id) {
+      res = await updateRule(Number(form.value.id), submitData)
+    } else {
+      res = await addRule(submitData)
+    }
 
     if (res.code === 200) {
       ElMessage.success(form.value.id ? '更新成功' : '添加成功')
       dialogVisible.value = false
-      await fetchData()
+      handleSearch()
     } else {
       ElMessage.error(res.message || '操作失败')
     }

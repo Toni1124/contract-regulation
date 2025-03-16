@@ -6,7 +6,7 @@ from sqlalchemy import func
 from typing import Dict, Any, Tuple, Union
 from datetime import datetime
 
-bp = Blueprint('black_white_list', __name__)
+bp = Blueprint('black_white_list', __name__, url_prefix='/api')
 schema = BlackWhiteListSchema()
 
 @bp.route('/black-white-list', methods=['GET'])

@@ -17,10 +17,19 @@ export const getRuleList = (params: {
   keyword?: string
 }) => {
   return request({
-    url: '/rules',
+    url: `${BASE_URL}/api/rules`,
     method: 'get',
     params
   })
+}
+
+interface RuleResponse {
+  code: number
+  message: string
+  data: {
+    list?: any[]
+    total?: number
+  }
 }
 
 /**
@@ -35,13 +44,13 @@ export const getRuleList = (params: {
  * @apiParam {Object[]} parameters 函数参数列表
  * @apiParam {File} [file] 规则文件
  */
-export const addRule = (data: FormData) => {
+export const addRule = (data: any) => {
   return request({
-    url: '/rules',
+    url: `${BASE_URL}/api/rules`,
     method: 'post',
     data,
     headers: {
-      'Content-Type': 'multipart/form-data'
+      'Content-Type': 'application/json'
     }
   })
 }
@@ -58,13 +67,13 @@ export const addRule = (data: FormData) => {
  * @apiParam {Object[]} [parameters] 函数参数列表
  * @apiParam {File} [file] 规则文件
  */
-export const updateRule = (id: number, data: FormData) => {
+export const updateRule = (id: number, data: any) => {
   return request({
     url: `${BASE_URL}/api/rules/${id}`,
     method: 'put',
     data,
     headers: {
-      'Content-Type': 'multipart/form-data'
+      'Content-Type': 'application/json'
     }
   })
 }
@@ -77,7 +86,7 @@ export const updateRule = (id: number, data: FormData) => {
  */
 export const deleteRule = (id: number) => {
   return request({
-    url: `/rules/${id}`,
+    url: `${BASE_URL}/api/rules/${id}`,
     method: 'delete'
   })
 }

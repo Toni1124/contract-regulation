@@ -7,7 +7,7 @@ import uuid
 from sqlalchemy.orm import joinedload
 import json
 
-bp = Blueprint('rule', __name__)
+bp = Blueprint('rules', __name__, url_prefix='/api')
 rule_schema = RuleSchema()
 rules_schema = RuleSchema(many=True)
 
@@ -16,66 +16,33 @@ def get_rules():
     page = request.args.get('page', 1, type=int)
     page_size = request.args.get('pageSize', 10, type=int)
     keyword = request.args.get('keyword', '')
-
-    query = Rule.query
-    if keyword:
-        query = query.filter(Rule.name.ilike(f'%{keyword}%') | 
-                           Rule.contract_address.ilike(f'%{keyword}%'))
-
-    # 使用 joinedload 预加载所有关联数据
-    query = query.options(
-        joinedload(Rule.functions).joinedload(RuleFunction.params)
-    )
-
-    pagination = query.paginate(page=page, per_page=page_size)
-    rules = pagination.items
     
-    # 序列化数据，确保包含所有关联数据
-    result = []
-    for rule in rules:
-        rule_data = {
-            'id': rule.id,
-            'name': rule.name,
-            'regulatorAddress': rule.regulator_address,
-            'description': rule.description,
-            'contractAddress': rule.contract_address,
-            'owner': rule.owner,
-            'ruleId': rule.rule_id,
-            'status': rule.status,
-            'createTime': rule.create_time.strftime('%Y-%m-%d %H:%M:%S'),
-            'functions': []
-        }
-        
-        for func in rule.functions:
-            function_data = {
-                'name': func.name,
-                'params': [{
-                    'name': param.name,
-                    'type': param.type,
-                    'condition': param.condition,
-                    'value': param.value
-                } for param in func.params]
-            }
-            rule_data['functions'].append(function_data)
-            
-        result.append(rule_data)
-
-    return jsonify({
+    query = Rule.query
+    
+    if keyword:
+        query = query.filter(Rule.name.ilike(f'%{keyword}%'))
+    
+    total = query.count()
+    items = query.order_by(Rule.id.desc())\
+        .offset((page - 1) * page_size)\
+        .limit(page_size)\
+        .all()
+    
+    return {
         'code': 200,
         'message': 'success',
         'data': {
-            'list': result,
-            'total': pagination.total
+            'list': rule_schema.dump(items, many=True),
+            'total': total,
+            'page': page,
+            'pageSize': page_size
         }
-    })
+    }
 
 @bp.route('/rules', methods=['POST'])
 def create_rule():
     try:
-        data = request.form.to_dict()
-        functions_str = request.form.get('functions', '[]')
-        data['functions'] = json.loads(functions_str)
-        
+        data = request.get_json()  # 改为使用 JSON
         rule_data = rule_schema.load(data)
         rule_id = f"RULE{datetime.now().strftime('%Y%m%d')}{str(uuid.uuid4())[:4].upper()}"
         
@@ -120,49 +87,71 @@ def create_rule():
 def update_rule(id):
     try:
         rule = Rule.query.get_or_404(id)
-        data = request.form.to_dict()
-        data['functions'] = request.json.get('functions', []) if request.is_json else []
-        
-        # 验证并反序列化数据
-        rule_data = rule_schema.load(data, partial=True)
+        data = request.get_json()
         
         # 更新基本信息
-        for key, value in rule_data.items():
-            if key != 'functions':
-                setattr(rule, key, value)
+        rule.name = data.get('name', rule.name)
+        rule.description = data.get('description', rule.description)
+        rule.contract_address = data.get('contractAddress', rule.contract_address)
         
-        # 更新函数和参数
-        if 'functions' in rule_data:
-            # 删除旧的函数和参数
-            for function in rule.functions:
-                db.session.delete(function)
-            
-            # 添加新的函数和参数
-            for func_data in rule_data['functions']:
-                function = RuleFunction(name=func_data['name'])
-                for param_data in func_data.get('params', []):
-                    parameter = RuleParameter(
-                        name=param_data['name'],
-                        type=param_data['type'],
-                        condition=param_data['condition'],
-                        value=param_data['value']
+        # 处理函数更新
+        if 'functions' in data:
+            # 使用 SQL 直接删除参数和函数，避免外键约束问题
+            with db.session.begin_nested():
+                # 先删除参数
+                db.session.execute(
+                    'DELETE FROM rule_parameters WHERE function_id IN '
+                    '(SELECT id FROM rule_functions WHERE rule_id = :rule_id)',
+                    {'rule_id': rule.id}
+                )
+                
+                # 再删除函数
+                db.session.execute(
+                    'DELETE FROM rule_functions WHERE rule_id = :rule_id',
+                    {'rule_id': rule.id}
+                )
+                
+                # 重置序列到当前最大值
+                db.session.execute(
+                    "SELECT setval('rule_functions_id_seq', COALESCE((SELECT MAX(id) FROM rule_functions), 0))"
+                )
+                db.session.execute(
+                    "SELECT setval('rule_parameters_id_seq', COALESCE((SELECT MAX(id) FROM rule_parameters), 0))"
+                )
+                
+                # 重新创建函数和参数
+                for func_data in data['functions']:
+                    # 创建新函数并获取其ID
+                    result = db.session.execute(
+                        'INSERT INTO rule_functions (rule_id, name) VALUES (:rule_id, :name) RETURNING id',
+                        {
+                            'rule_id': rule.id,
+                            'name': func_data['name']
+                        }
                     )
-                    function.params.append(parameter)
-                rule.functions.append(function)
+                    function_id = result.scalar()
+                    
+                    # 创建该函数的所有参数
+                    for param_data in func_data.get('params', []):
+                        db.session.execute(
+                            'INSERT INTO rule_parameters (function_id, name, type, condition, value) '
+                            'VALUES (:function_id, :name, :type, :condition, :value)',
+                            {
+                                'function_id': function_id,
+                                'name': param_data['name'],
+                                'type': param_data['type'],
+                                'condition': param_data['condition'],
+                                'value': param_data['value']
+                            }
+                        )
         
         db.session.commit()
-        
-        return jsonify({
-            'code': 200,
-            'message': 'success'
-        })
+        return jsonify({'code': 200, 'message': 'Rule updated successfully'})
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({
-            'code': 400,
-            'message': str(e)
-        }), 400
+        print(f"Error updating rule: {str(e)}")
+        return jsonify({'code': 400, 'message': str(e)}), 400
 
 @bp.route('/rules/<int:id>', methods=['DELETE'])
 def delete_rule(id):

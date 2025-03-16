@@ -19,7 +19,7 @@ class Rule(db.Model):
 class RuleFunction(db.Model):
     __tablename__ = 'rule_functions'
     
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     rule_id = db.Column(db.Integer, db.ForeignKey('rules.id'), nullable=False)
     name = db.Column(db.String(100), nullable=False)
     params = db.relationship('RuleParameter', backref='function', lazy=True, cascade='all, delete-orphan')
@@ -27,7 +27,7 @@ class RuleFunction(db.Model):
 class RuleParameter(db.Model):
     __tablename__ = 'rule_parameters'
     
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     function_id = db.Column(db.Integer, db.ForeignKey('rule_functions.id'), nullable=False)
     name = db.Column(db.String(100), nullable=False)
     type = db.Column(db.String(50), nullable=False)
