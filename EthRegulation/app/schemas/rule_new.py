@@ -16,5 +16,5 @@ class RuleNewSchema(ma.SQLAlchemySchema):
     status = fields.Int(dump_only=True)
     create_time = fields.DateTime(format='%Y-%m-%d %H:%M:%S', dump_only=True, data_key='createTime')
     update_time = fields.DateTime(format='%Y-%m-%d %H:%M:%S', dump_only=True, data_key='updateTime')
-    rule_number = fields.Str(allow_none=True, data_key='ruleNumber')
+    rule_number = fields.Str(allow_none=True, data_key='ruleId')
     regulator_address = fields.Str(allow_none=True, data_key='regulatorAddress') 
