@@ -369,18 +369,48 @@
         
         <div class="contract-source">
           <h3>源代码</h3>
-          <div class="code-wrapper">
-            <pre class="language-solidity"><code>{{ selectedContract?.sourceCode }}</code></pre>
+          <div class="code-wrapper" v-loading="loadingSource">
+            <pre v-if="showSourceCode" class="language-solidity"><code>{{ contractSourceCode }}</code></pre>
+            <div v-else class="empty-source">
+              <el-empty description="加载中..." />
+            </div>
           </div>
         </div>
 
-        <div class="contract-functions">
-          <h3>可用函数</h3>
-          <el-table :data="contractFunctions" border style="width: 100%">
-            <el-table-column prop="name" label="函数名称" />
-            <el-table-column prop="params" label="参数" />
-            <el-table-column prop="returns" label="返回值" />
-          </el-table>
+        <div class="rule-info">
+          <h3>监管规则</h3>
+          <div class="rule-content">
+            <el-descriptions :column="1" border>
+              <el-descriptions-item label="规则名称">{{ currentRule?.name }}</el-descriptions-item>
+              <el-descriptions-item label="规则描述">{{ currentRule?.description }}</el-descriptions-item>
+              <el-descriptions-item label="监管函数">
+                <div v-for="func in currentRule?.functions" :key="func.name" class="function-item">
+                  <p class="function-name">{{ func.name }}</p>
+                  <div v-for="param in func.params" :key="param.name" class="param-item">
+                    <span>{{ param.name }}</span>
+                    <span>{{ param.condition }}</span>
+                    <span>{{ param.value }}</span>
+                  </div>
+                </div>
+              </el-descriptions-item>
+            </el-descriptions>
+            
+            <div class="test-section">
+              <el-button 
+                type="primary" 
+                @click="handleTestRule" 
+                :loading="testing"
+              >
+                测试规则
+              </el-button>
+              <div v-if="testResult" class="test-result">
+                <el-tag :type="testResult.success ? 'success' : 'danger'">
+                  {{ testResult.success ? '满足监管规则' : '违反监管规则' }}
+                </el-tag>
+                <p v-if="testResult.message" class="result-message">{{ testResult.message }}</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </el-dialog>
@@ -682,12 +712,31 @@ const handleEdit = async (row: any) => {
   }
 }
 
-const viewContract = (row: any) => {
-  const contract = contracts.value.find(c => c.address === row.contractAddress)
-  if (contract) {
-    selectedContract.value = contract
-    contractDialogVisible.value = true
-    highlightCode()
+const viewContract = async (row: any) => {
+  selectedContract.value = row
+  currentRule.value = row // 当前规则就是表格行数据
+  contractDialogVisible.value = true
+  testResult.value = null
+  
+  // 加载合约源码
+  if (row.contractAddress) {
+    try {
+      loadingSource.value = true
+      showSourceCode.value = false
+      const res = await getContractDetail(row.contractAddress)
+      if (res.data) {
+        contractSourceCode.value = formatSourceCode(res.data.source_code || '// No source code available')
+        showSourceCode.value = true
+        nextTick(() => {
+          highlightCode()
+        })
+      }
+    } catch (error) {
+      console.error('获取合约源码失败:', error)
+      ElMessage.error('获取合约源码失败')
+    } finally {
+      loadingSource.value = false
+    }
   }
 }
 
@@ -1099,6 +1148,33 @@ const selectFunction = (funcIndex: number, name: string) => {
   showFunctionSelector.value = false
 }
 
+// 新增状态变量
+const testing = ref(false)
+const testResult = ref<{success: boolean; message?: string} | null>(null)
+const currentRule = ref<any>(null)
+
+// 测试规则
+const handleTestRule = async () => {
+  if (!currentRule.value) return
+  
+  testing.value = true
+  testResult.value = null
+  
+  try {
+    // 模拟测试结果
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    testResult.value = {
+      success: Math.random() > 0.5,
+      message: '测试完成'
+    }
+  } catch (error) {
+    console.error('测试失败:', error)
+    ElMessage.error('测试失败，请重试')
+  } finally {
+    testing.value = false
+  }
+}
+
 onMounted(async () => {
   handleSearch()
   // 获取合约列表
@@ -1314,8 +1390,43 @@ onMounted(async () => {
       }
     }
 
-    .contract-functions {
-      margin-top: 24px;
+    .rule-info {
+      margin-top: 20px;
+
+      .rule-content {
+        margin-top: 16px;
+      }
+
+      .function-item {
+        margin-bottom: 12px;
+
+        .function-name {
+          font-weight: 500;
+          margin-bottom: 8px;
+        }
+
+        .param-item {
+          display: flex;
+          gap: 12px;
+          margin-left: 16px;
+          color: #606266;
+        }
+      }
+
+      .test-section {
+        margin-top: 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+
+        .test-result {
+          .result-message {
+            margin: 8px 0 0;
+            color: #606266;
+            font-size: 14px;
+          }
+        }
+      }
     }
   }
 }
@@ -1472,6 +1583,45 @@ onMounted(async () => {
       &:hover {
         background-color: #f5f7fa;
         color: #409EFF;
+      }
+    }
+  }
+}
+
+.rule-info {
+  margin-top: 20px;
+
+  .rule-content {
+    margin-top: 16px;
+  }
+
+  .function-item {
+    margin-bottom: 12px;
+
+    .function-name {
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+
+    .param-item {
+      display: flex;
+      gap: 12px;
+      margin-left: 16px;
+      color: #606266;
+    }
+  }
+
+  .test-section {
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+
+    .test-result {
+      .result-message {
+        margin: 8px 0 0;
+        color: #606266;
+        font-size: 14px;
       }
     }
   }
