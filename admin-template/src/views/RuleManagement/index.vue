@@ -274,16 +274,21 @@
                         placeholder="条件"
                         style="width: 120px"
                       >
-                        <el-option label="等于" value="=" />
-                        <el-option label="大于" value=">" />
-                        <el-option label="大于等于" value=">=" />
-                        <el-option label="小于" value="<" />
-                        <el-option label="小于等于" value="<=" />
-                        <el-option label="不等于" value="!=" />
-                        <el-option label="包含" value="includes" />
-                        <el-option label="不包含" value="not_includes" />
-                        <el-option label="在范围内" value="in_range" />
-                        <el-option label="不在范围内" value="not_in_range" />
+                        <el-option-group label="比较运算">
+                          <el-option label="等于 (==)" value="==" />
+                          <el-option label="不等于 (!=)" value="!=" />
+                          <el-option label="小于等于 (<=)" value="<=" />
+                          <el-option label="大于等于 (>=)" value=">=" />
+                          <el-option label="小于 (<)" value="<" />
+                          <el-option label="大于 (>)" value=">" />
+                        </el-option-group>
+                        <el-option-group label="集合运算">
+                          <el-option label="在集合中 (in)" value="in" />
+                          <el-option label="不在集合中 (not_in)" value="not_in" />
+                        </el-option-group>
+                        <el-option-group label="数组函数">
+                          <el-option label="长度 (length)" value="length" />
+                        </el-option-group>
                       </el-select>
                       <el-input
                         v-model="param.value"
