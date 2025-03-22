@@ -1287,157 +1287,183 @@ const executeTest = async () => {
     for (const rule of functionRules.params) {
       const inputValue = testForm.value.params[rule.name]
       
-      switch(rule.condition) {
-        // 数值比较
-        case '<=':
-        case '>=':
-        case '<':
-        case '>':
-        case '==':
-        case '!=':
-        case 'between': {
+      // 处理不同条件类型
+      if (rule.condition === 'between') {
+        // 解析区间值 - 处理可能的非标准JSON格式
+        let min, max
+        try {
+          // 尝试标准JSON解析
+          [min, max] = JSON.parse(rule.value)
+        } catch (e) {
+          // 如果失败，尝试手动解析
+          const matches = rule.value.match(/\[([^,]+),([^\]]+)\]/)
+          if (matches && matches.length === 3) {
+            min = matches[1].trim()
+            max = matches[2].trim()
+          } else {
+            throw new Error('区间格式无效')
+          }
+        }
+        
+        const value = Number(inputValue)
+        
+        if (rule.type === 'timestamp') {
+          // 对于timestamp，保持字符串比较以支持前导零
+          const strValue = String(inputValue)
+          const strMin = String(min)
+          const strMax = String(max)
+          
+          const isValid = strValue >= strMin && strValue <= strMax
+          
+          if (!isValid) {
+            violations.push(`${rule.name}: 时间戳 ${strValue} 必须在区间 [${strMin},${strMax}] 内`)
+          }
+        } else {
+          // 其他数值类型仍然使用数字比较
+          const numMin = Number(min)
+          const numMax = Number(max)
+          
+          if (isNaN(value) || isNaN(numMin) || isNaN(numMax)) {
+            violations.push(`${rule.name}: 输入值和区间边界必须是数字`)
+            continue
+          }
+          
+          const isValid = value >= numMin && value <= numMax
+          
+          if (!isValid) {
+            violations.push(`${rule.name}: ${value} 必须在区间 [${numMin},${numMax}] 内`)
+          }
+        }
+      } else if (rule.condition === 'in' || rule.condition === 'not_in') {
+        // 处理集合操作
+        try {
+          let set = []
           try {
-            // 对于timestamp类型，进行字符串比较
-            if (rule.type === 'timestamp') {
-              // 移除可能的方括号并清理空格
-              let [min, max] = rule.value.split(',')
-              
-              // 移除可能的方括号并清理空格
-              min = min.replace(/[\[\]\s]/g, '')
-              max = max.replace(/[\[\]\s]/g, '')
-              const value = String(inputValue)
-              
-              // 使用字符串比较，保持前导零
-              const isValid = value >= min && value <= max
-              
-              if (!isValid) {
-                violations.push(`${rule.name}: ${value} 必须在区间 [${min},${max}] 内`)
-              }
-            } else {
-              // 其他数值类型仍然使用数字比较
-              const value = Number(inputValue)
-              const numMin = Number(rule.value.split(',')[0])
-              const numMax = Number(rule.value.split(',')[1])
-              
-              if (isNaN(value) || isNaN(numMin) || isNaN(numMax)) {
-                violations.push(`${rule.name}: 输入值和区间边界必须是数字`)
-                continue
-              }
-              
-              const isValid = value >= numMin && value <= numMax
-              
-              if (!isValid) {
-                violations.push(`${rule.name}: ${value} 必须在区间 [${numMin},${numMax}] 内`)
-              }
+            set = JSON.parse(rule.value)
+            if (!Array.isArray(set)) {
+              throw new Error('集合值必须是数组格式')
             }
           } catch (e) {
-            violations.push(`${rule.name}: 区间格式无效，应为 [最小值,最大值]`)
+            violations.push(`${rule.name}: 规则值格式错误，应为JSON数组`)
+            continue
           }
-          break
-        }
-
-        case 'in':
-        case 'not_in': {
-          try {
-            let set = []
+          
+          // 根据参数类型处理输入值
+          let valueToCheck = inputValue
+          if (rule.type.endsWith('[]')) {
             try {
-              set = JSON.parse(rule.value)
-              if (!Array.isArray(set)) {
-                throw new Error('集合值必须是数组格式')
-              }
-            } catch (e) {
-              violations.push(`${rule.name}: 规则值格式错误，应为JSON数组`)
-              continue
-            }
-            
-            // 根据参数类型处理输入值
-            let valueToCheck = inputValue
-            if (rule.type.endsWith('[]')) {
-              try {
-                const arr = JSON.parse(inputValue)
-                if (!Array.isArray(arr)) {
-                  throw new Error('输入值必须是数组格式')
-                }
-                // 对于数组类型，检查每个元素
-                for (const item of arr) {
-                  const normalizedItem = rule.type.startsWith('address') ? item.toLowerCase() : item
-                  const normalizedSet = rule.type.startsWith('address') ? set.map(addr => addr.toLowerCase()) : set
-                  const isIn = normalizedSet.includes(normalizedItem)
-                  const isValid = rule.condition === 'in' ? isIn : !isIn
-                  
-                  if (!isValid) {
-                    violations.push(`${rule.name}: 数组元素 ${item} ${rule.condition === 'in' ? '不在' : '在'}指定集合中`)
-                  }
-                }
-                continue // 已经处理完数组，跳过后续处理
-              } catch (e) {
-                violations.push(`${rule.name}: 输入数组格式无效 - ${e.message}`)
-                continue
-              }
-            }
-
-            // 对于地址类型，进行大小写不敏感比较
-            if (rule.type === 'address') {
-              const normalizedInput = String(valueToCheck).toLowerCase()
-              const normalizedSet = set.map(addr => addr.toLowerCase())
-              const isIn = normalizedSet.includes(normalizedInput)
-              const isValid = rule.condition === 'in' ? isIn : !isIn
-              
-              if (!isValid) {
-                violations.push(`${rule.name}: 地址 ${inputValue} ${rule.condition === 'in' ? '不在' : '在'}指定集合中`)
-              }
-            } else {
-              // 其他类型直接比较
-              const isIn = set.includes(valueToCheck)
-              const isValid = rule.condition === 'in' ? isIn : !isIn
-              
-              if (!isValid) {
-                violations.push(`${rule.name}: ${inputValue} ${rule.condition === 'in' ? '不在' : '在'}指定集合中`)
-              }
-            }
-          } catch (e) {
-            violations.push(`${rule.name}: 验证失败 - ${e.message}`)
-          }
-          break
-        }
-
-        // 数组长度验证
-        case 'length<=':
-        case 'length>=':
-        case 'length==': {
-          try {
-            let arr = []
-            try {
-              arr = JSON.parse(inputValue)
+              const arr = JSON.parse(inputValue)
               if (!Array.isArray(arr)) {
                 throw new Error('输入值必须是数组格式')
               }
+              // 对于数组类型，检查每个元素
+              for (const item of arr) {
+                const normalizedItem = rule.type.startsWith('address') ? item.toLowerCase() : item
+                const normalizedSet = rule.type.startsWith('address') ? set.map(addr => addr.toLowerCase()) : set
+                const isIn = normalizedSet.includes(normalizedItem)
+                const isValid = rule.condition === 'in' ? isIn : !isIn
+                
+                if (!isValid) {
+                  violations.push(`${rule.name}: 数组元素 ${item} ${rule.condition === 'in' ? '不在' : '在'}指定集合中`)
+                }
+              }
+              continue // 已经处理完数组，跳过后续处理
             } catch (e) {
-              violations.push(`${rule.name}: 输入值格式错误，应为JSON数组`)
+              violations.push(`${rule.name}: 输入数组格式无效 - ${e.message}`)
               continue
             }
-            
-            const len = arr.length
-            const ruleNum = Number(rule.value)
-            
-            let isValid = false
-            switch(rule.condition) {
-              case 'length<=': isValid = len <= ruleNum; break
-              case 'length>=': isValid = len >= ruleNum; break
-              case 'length==': isValid = len === ruleNum; break
-            }
+          }
+
+          // 对于地址类型，进行大小写不敏感比较
+          if (rule.type === 'address') {
+            const normalizedInput = String(valueToCheck).toLowerCase()
+            const normalizedSet = set.map(addr => addr.toLowerCase())
+            const isIn = normalizedSet.includes(normalizedInput)
+            const isValid = rule.condition === 'in' ? isIn : !isIn
             
             if (!isValid) {
-              violations.push(`${rule.name}: 数组长度 ${len} 必须 ${rule.condition.replace('length', '')} ${ruleNum}`)
+              violations.push(`${rule.name}: 地址 ${inputValue} ${rule.condition === 'in' ? '不在' : '在'}指定集合中`)
+            }
+          } else {
+            // 其他类型直接比较
+            const isIn = set.includes(valueToCheck)
+            const isValid = rule.condition === 'in' ? isIn : !isIn
+            
+            if (!isValid) {
+              violations.push(`${rule.name}: ${inputValue} ${rule.condition === 'in' ? '不在' : '在'}指定集合中`)
+            }
+          }
+        } catch (e) {
+          violations.push(`${rule.name}: 验证失败 - ${e.message}`)
+        }
+      } else if (rule.condition.startsWith('length')) {
+        // 数组长度验证
+        try {
+          let arr = []
+          try {
+            arr = JSON.parse(inputValue)
+            if (!Array.isArray(arr)) {
+              throw new Error('输入值必须是数组格式')
             }
           } catch (e) {
-            violations.push(`${rule.name}: 验证失败 - ${e.message}`)
+            violations.push(`${rule.name}: 输入值格式错误，应为JSON数组`)
+            continue
           }
-          break
+          
+          const len = arr.length
+          const ruleNum = Number(rule.value)
+          
+          let isValid = false
+          switch(rule.condition) {
+            case 'length<=': isValid = len <= ruleNum; break
+            case 'length>=': isValid = len >= ruleNum; break
+            case 'length==': isValid = len === ruleNum; break
+          }
+          
+          if (!isValid) {
+            violations.push(`${rule.name}: 数组长度 ${len} 必须 ${rule.condition.replace('length', '')} ${ruleNum}`)
+          }
+        } catch (e) {
+          violations.push(`${rule.name}: 验证失败 - ${e.message}`)
         }
-        
-        default:
-          violations.push(`${rule.name}: 不支持的条件类型 ${rule.condition}`)
+      } else {
+        // 处理其他条件类型
+        if (rule.type === 'uint256' || rule.type === 'uint' || rule.type === 'timestamp') {
+          const num = Number(inputValue)
+          const ruleNum = Number(rule.value)
+          
+          if (isNaN(num)) {
+            violations.push(`${rule.name}: 输入值必须是数字`)
+            continue
+          }
+          
+          let isValid = false
+          switch(rule.condition) {
+            case '<=': isValid = num <= ruleNum; break
+            case '>=': isValid = num >= ruleNum; break
+            case '<': isValid = num < ruleNum; break
+            case '>': isValid = num > ruleNum; break
+            case '==': isValid = num === ruleNum; break
+            case '!=': isValid = num !== ruleNum; break
+          }
+          
+          if (!isValid) {
+            violations.push(`${rule.name}: ${num} 必须 ${rule.condition} ${ruleNum}`)
+          }
+        } else {
+          // 字符串比较
+          let isValid = false
+          switch(rule.condition) {
+            case '==': isValid = inputValue === rule.value; break
+            case '!=': isValid = inputValue !== rule.value; break
+            default:
+              violations.push(`${rule.name}: ${rule.condition} 不适用于 ${rule.type} 类型`)
+          }
+          
+          if (!isValid) {
+            violations.push(`${rule.name}: ${inputValue} 必须 ${rule.condition} ${rule.value}`)
+          }
+        }
       }
     }
     
