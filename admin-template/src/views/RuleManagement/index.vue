@@ -496,6 +496,60 @@
         </div>
       </div>
     </el-dialog>
+
+    <!-- 添加测试规则对话框 -->
+    <el-dialog
+      v-model="testDialogVisible"
+      title="测试监管规则"
+      width="50%"
+    >
+      <div class="test-dialog-content">
+        <div class="rule-preview">
+          <h4>当前监管规则:</h4>
+          <div v-for="func in currentRule?.functions" :key="func.name" class="rule-item">
+            <p class="function-name">{{ func.name }}</p>
+            <div v-for="param in func.params" :key="param.name" class="param-rule">
+              <span>{{ param.name }}</span>
+              <span>{{ param.condition }}</span>
+              <span>{{ param.value }}</span>
+            </div>
+          </div>
+        </div>
+        
+        <el-form :model="testForm" ref="testFormRef" label-width="120px">
+          <el-form-item label="调用函数" prop="functionName">
+            <el-select v-model="testForm.functionName" placeholder="请选择要测试的函数">
+              <el-option 
+                v-for="func in currentRule?.functions"
+                :key="func.name"
+                :label="func.name"
+                :value="func.name"
+              />
+            </el-select>
+          </el-form-item>
+          
+          <template v-if="testForm.functionName">
+            <el-form-item 
+              v-for="param in getSelectedFunctionParams()"
+              :key="param.name"
+              :label="param.name"
+              :prop="'params.' + param.name"
+            >
+              <el-input v-model="testForm.params[param.name]" :placeholder="`请输入${param.name}的值`" />
+            </el-form-item>
+          </template>
+        </el-form>
+      </div>
+      
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="testDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="executeTest" :loading="testing">
+            执行测试
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -1154,19 +1208,84 @@ const testResult = ref<{success: boolean; message?: string} | null>(null)
 const currentRule = ref<any>(null)
 
 // 测试规则
-const handleTestRule = async () => {
+const handleTestRule = () => {
   if (!currentRule.value) return
+  testForm.value = {
+    functionName: '',
+    params: {}
+  }
+  testDialogVisible.value = true
+}
+
+// 获取选中函数的参数定义
+const getSelectedFunctionParams = () => {
+  const selectedFunction = currentRule.value?.functions.find(
+    f => f.name === testForm.value.functionName
+  )
+  return selectedFunction?.params || []
+}
+
+// 执行测试
+const executeTest = async () => {
+  if (!testForm.value.functionName) {
+    ElMessage.warning('请选择要测试的函数')
+    return
+  }
   
   testing.value = true
   testResult.value = null
   
   try {
-    // 模拟测试结果
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    testResult.value = {
-      success: Math.random() > 0.5,
-      message: '测试完成'
+    // 获取当前函数的规则
+    const functionRules = currentRule.value?.functions.find(
+      f => f.name === testForm.value.functionName
+    )
+    
+    if (!functionRules) {
+      throw new Error('未找到函数规则')
     }
+    
+    // 检查每个参数是否符合规则
+    const violations = []
+    for (const rule of functionRules.params) {
+      const inputValue = Number(testForm.value.params[rule.name])
+      const ruleValue = Number(rule.value)
+      
+      if (isNaN(inputValue)) {
+        violations.push(`${rule.name}: 输入值必须是数字`)
+        continue
+      }
+      
+      switch (rule.condition) {
+        case '<=':
+          if (!(inputValue <= ruleValue)) {
+            violations.push(`${rule.name}: ${inputValue} 必须 <= ${ruleValue}`)
+          }
+          break
+        case '>=':
+          if (!(inputValue >= ruleValue)) {
+            violations.push(`${rule.name}: ${inputValue} 必须 >= ${ruleValue}`)
+          }
+          break
+        // 可以添加更多条件判断
+      }
+    }
+    
+    // 设置测试结果
+    testResult.value = {
+      success: violations.length === 0,
+      message: violations.length > 0 
+        ? `违反规则:\n${violations.join('\n')}`
+        : '所有参数都满足规则要求'
+    }
+    
+    if (testResult.value.success) {
+      ElMessage.success('测试通过')
+    } else {
+      ElMessage.warning('测试未通过')
+    }
+    
+    testDialogVisible.value = false
   } catch (error) {
     console.error('测试失败:', error)
     ElMessage.error('测试失败，请重试')
@@ -1174,6 +1293,14 @@ const handleTestRule = async () => {
     testing.value = false
   }
 }
+
+// 测试相关的状态
+const testDialogVisible = ref(false)
+const testForm = ref({
+  functionName: '',
+  params: {} as Record<string, string>
+})
+const testFormRef = ref()
 
 onMounted(async () => {
   handleSearch()
@@ -1622,6 +1749,36 @@ onMounted(async () => {
         margin: 8px 0 0;
         color: #606266;
         font-size: 14px;
+      }
+    }
+  }
+}
+
+.test-dialog-content {
+  .rule-preview {
+    margin-bottom: 20px;
+    padding: 12px;
+    background-color: #f5f7fa;
+    border-radius: 4px;
+    
+    h4 {
+      margin: 0 0 12px;
+      color: #606266;
+    }
+    
+    .rule-item {
+      margin-bottom: 12px;
+      
+      .function-name {
+        font-weight: 500;
+        margin-bottom: 8px;
+      }
+      
+      .param-rule {
+        display: flex;
+        gap: 12px;
+        margin-left: 16px;
+        color: #606266;
       }
     }
   }
