@@ -281,20 +281,54 @@
                           <el-option label="大于等于 (>=)" value=">=" />
                           <el-option label="小于 (<)" value="<" />
                           <el-option label="大于 (>)" value=">" />
+                          <el-option label="在区间内 (between)" value="between" />
                         </el-option-group>
                         <el-option-group label="集合运算">
                           <el-option label="在集合中 (in)" value="in" />
                           <el-option label="不在集合中 (not_in)" value="not_in" />
                         </el-option-group>
                         <el-option-group label="数组函数">
-                          <el-option label="长度 (length)" value="length" />
+                          <el-option label="长度小于等于 (length<=)" value="length<=" />
+                          <el-option label="长度大于等于 (length>=)" value="length>=" />
+                          <el-option label="长度等于 (length==)" value="length==" />
                         </el-option-group>
                       </el-select>
-                      <el-input
-                        v-model="param.value"
-                        placeholder="参数值"
-                        style="width: 200px"
-                      />
+                      <!-- 区间输入 -->
+                      <template v-if="param.condition === 'between'">
+                        <el-input
+                          v-model="param.value"
+                          placeholder="格式: [最小值,最大值]"
+                          style="width: 200px"
+                        >
+                          <template #prepend>
+                            <el-tooltip content="输入格式: [10,100] 或 (10,100)&#10;[] 表示包含边界&#10;() 表示不包含边界">
+                              <el-icon><InfoFilled /></el-icon>
+                            </el-tooltip>
+                          </template>
+                        </el-input>
+                      </template>
+                      <!-- 集合输入 -->
+                      <template v-else-if="['in', 'not_in'].includes(param.condition)">
+                        <el-input
+                          v-model="param.value"
+                          placeholder='格式: ["value1","value2"]'
+                          style="width: 200px"
+                        >
+                          <template #prepend>
+                            <el-tooltip content="输入格式: [&quot;value1&quot;,&quot;value2&quot;]">
+                              <el-icon><InfoFilled /></el-icon>
+                            </el-tooltip>
+                          </template>
+                        </el-input>
+                      </template>
+                      <!-- 普通输入 -->
+                      <template v-else>
+                        <el-input
+                          v-model="param.value"
+                          placeholder="参数值"
+                          style="width: 200px"
+                        />
+                      </template>
                       <el-button type="danger" @click="removeParam(funcIndex, paramIndex)">
                         <el-icon><Delete /></el-icon>
                         删除
@@ -561,7 +595,7 @@
 <script setup lang="ts">
 import { ref, onMounted, nextTick, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Search, Plus, Delete, Close } from '@element-plus/icons-vue'
+import { Search, Plus, Delete, Close, InfoFilled } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import { getRuleList, addRule, updateRule, deleteRule, getContractList, getRuleDetail, getContractDetail } from '@/api/rules'
 import useStoreUser from '@/store/user'
@@ -1241,7 +1275,6 @@ const executeTest = async () => {
   testResult.value = null
   
   try {
-    // 获取当前函数的规则
     const functionRules = currentRule.value?.functions.find(
       f => f.name === testForm.value.functionName
     )
@@ -1250,33 +1283,164 @@ const executeTest = async () => {
       throw new Error('未找到函数规则')
     }
     
-    // 检查每个参数是否符合规则
     const violations = []
     for (const rule of functionRules.params) {
-      const inputValue = Number(testForm.value.params[rule.name])
-      const ruleValue = Number(rule.value)
+      const inputValue = testForm.value.params[rule.name]
       
-      if (isNaN(inputValue)) {
-        violations.push(`${rule.name}: 输入值必须是数字`)
-        continue
-      }
-      
-      switch (rule.condition) {
+      switch(rule.condition) {
+        // 数值比较
         case '<=':
-          if (!(inputValue <= ruleValue)) {
-            violations.push(`${rule.name}: ${inputValue} 必须 <= ${ruleValue}`)
-          }
-          break
         case '>=':
-          if (!(inputValue >= ruleValue)) {
-            violations.push(`${rule.name}: ${inputValue} 必须 >= ${ruleValue}`)
+        case '<':
+        case '>':
+        case '==':
+        case '!=':
+        case 'between': {
+          try {
+            // 对于timestamp类型，进行字符串比较
+            if (rule.type === 'timestamp') {
+              // 移除可能的方括号并清理空格
+              let [min, max] = rule.value.split(',')
+              
+              // 移除可能的方括号并清理空格
+              min = min.replace(/[\[\]\s]/g, '')
+              max = max.replace(/[\[\]\s]/g, '')
+              const value = String(inputValue)
+              
+              // 使用字符串比较，保持前导零
+              const isValid = value >= min && value <= max
+              
+              if (!isValid) {
+                violations.push(`${rule.name}: ${value} 必须在区间 [${min},${max}] 内`)
+              }
+            } else {
+              // 其他数值类型仍然使用数字比较
+              const value = Number(inputValue)
+              const numMin = Number(rule.value.split(',')[0])
+              const numMax = Number(rule.value.split(',')[1])
+              
+              if (isNaN(value) || isNaN(numMin) || isNaN(numMax)) {
+                violations.push(`${rule.name}: 输入值和区间边界必须是数字`)
+                continue
+              }
+              
+              const isValid = value >= numMin && value <= numMax
+              
+              if (!isValid) {
+                violations.push(`${rule.name}: ${value} 必须在区间 [${numMin},${numMax}] 内`)
+              }
+            }
+          } catch (e) {
+            violations.push(`${rule.name}: 区间格式无效，应为 [最小值,最大值]`)
           }
           break
-        // 可以添加更多条件判断
+        }
+
+        case 'in':
+        case 'not_in': {
+          try {
+            let set = []
+            try {
+              set = JSON.parse(rule.value)
+              if (!Array.isArray(set)) {
+                throw new Error('集合值必须是数组格式')
+              }
+            } catch (e) {
+              violations.push(`${rule.name}: 规则值格式错误，应为JSON数组`)
+              continue
+            }
+            
+            // 根据参数类型处理输入值
+            let valueToCheck = inputValue
+            if (rule.type.endsWith('[]')) {
+              try {
+                const arr = JSON.parse(inputValue)
+                if (!Array.isArray(arr)) {
+                  throw new Error('输入值必须是数组格式')
+                }
+                // 对于数组类型，检查每个元素
+                for (const item of arr) {
+                  const normalizedItem = rule.type.startsWith('address') ? item.toLowerCase() : item
+                  const normalizedSet = rule.type.startsWith('address') ? set.map(addr => addr.toLowerCase()) : set
+                  const isIn = normalizedSet.includes(normalizedItem)
+                  const isValid = rule.condition === 'in' ? isIn : !isIn
+                  
+                  if (!isValid) {
+                    violations.push(`${rule.name}: 数组元素 ${item} ${rule.condition === 'in' ? '不在' : '在'}指定集合中`)
+                  }
+                }
+                continue // 已经处理完数组，跳过后续处理
+              } catch (e) {
+                violations.push(`${rule.name}: 输入数组格式无效 - ${e.message}`)
+                continue
+              }
+            }
+
+            // 对于地址类型，进行大小写不敏感比较
+            if (rule.type === 'address') {
+              const normalizedInput = String(valueToCheck).toLowerCase()
+              const normalizedSet = set.map(addr => addr.toLowerCase())
+              const isIn = normalizedSet.includes(normalizedInput)
+              const isValid = rule.condition === 'in' ? isIn : !isIn
+              
+              if (!isValid) {
+                violations.push(`${rule.name}: 地址 ${inputValue} ${rule.condition === 'in' ? '不在' : '在'}指定集合中`)
+              }
+            } else {
+              // 其他类型直接比较
+              const isIn = set.includes(valueToCheck)
+              const isValid = rule.condition === 'in' ? isIn : !isIn
+              
+              if (!isValid) {
+                violations.push(`${rule.name}: ${inputValue} ${rule.condition === 'in' ? '不在' : '在'}指定集合中`)
+              }
+            }
+          } catch (e) {
+            violations.push(`${rule.name}: 验证失败 - ${e.message}`)
+          }
+          break
+        }
+
+        // 数组长度验证
+        case 'length<=':
+        case 'length>=':
+        case 'length==': {
+          try {
+            let arr = []
+            try {
+              arr = JSON.parse(inputValue)
+              if (!Array.isArray(arr)) {
+                throw new Error('输入值必须是数组格式')
+              }
+            } catch (e) {
+              violations.push(`${rule.name}: 输入值格式错误，应为JSON数组`)
+              continue
+            }
+            
+            const len = arr.length
+            const ruleNum = Number(rule.value)
+            
+            let isValid = false
+            switch(rule.condition) {
+              case 'length<=': isValid = len <= ruleNum; break
+              case 'length>=': isValid = len >= ruleNum; break
+              case 'length==': isValid = len === ruleNum; break
+            }
+            
+            if (!isValid) {
+              violations.push(`${rule.name}: 数组长度 ${len} 必须 ${rule.condition.replace('length', '')} ${ruleNum}`)
+            }
+          } catch (e) {
+            violations.push(`${rule.name}: 验证失败 - ${e.message}`)
+          }
+          break
+        }
+        
+        default:
+          violations.push(`${rule.name}: 不支持的条件类型 ${rule.condition}`)
       }
     }
     
-    // 设置测试结果
     testResult.value = {
       success: violations.length === 0,
       message: violations.length > 0 
@@ -1293,7 +1457,7 @@ const executeTest = async () => {
     testDialogVisible.value = false
   } catch (error) {
     console.error('测试失败:', error)
-    ElMessage.error('测试失败，请重试')
+    ElMessage.error(error instanceof Error ? error.message : '测试失败，请重试')
   } finally {
     testing.value = false
   }
