@@ -16,14 +16,15 @@
         ref="tableRef"
         :data="currentPageData" 
         border 
-        style="width: max-content; min-width: 100%"
+        :fit="true"
+        style="width: 100%"
         v-loading="isLoading"
       >
-        <!-- 固定前三列 -->
+        <!-- 修改列宽设置，使用 min-width 替代 width -->
         <el-table-column 
           prop="request_time" 
           label="时间戳" 
-          width="180"
+          min-width="180"
           fixed="left"
           sortable
         >
@@ -34,80 +35,80 @@
         <el-table-column 
           prop="block_number" 
           label="区块号" 
-          width="120"
+          min-width="120"
           fixed="left"
           sortable
         />
         <el-table-column 
           prop="transaction_index" 
           label="交易索引" 
-          width="100"
+          min-width="100"
           fixed="left"
         />
         <el-table-column 
           prop="from_address" 
           label="发送方地址" 
-          width="280"
+          min-width="280"
           :filters="addressFilters"
           :filter-method="filterAddress"
         />
         <el-table-column 
           prop="to_address" 
           label="接收方地址" 
-          width="280"
+          min-width="280"
           :filters="addressFilters"
           :filter-method="filterAddress"
         />
         <el-table-column 
           prop="value" 
           label="交易值" 
-          width="120"
+          min-width="120"
         />
         <el-table-column 
           prop="gas" 
           label="Gas" 
-          width="100"
+          min-width="100"
         />
         <el-table-column 
           prop="gas_price" 
           label="Gas价格" 
-          width="120"
+          min-width="120"
         />
         <el-table-column 
           prop="nonce" 
           label="Nonce" 
-          width="100"
+          min-width="100"
         />
         <el-table-column 
           prop="block_hash" 
           label="区块哈希" 
-          width="180"
+          min-width="180"
         />
         <el-table-column 
           prop="input" 
           label="输入数据" 
-          width="200"
+          min-width="200"
           show-overflow-tooltip
         />
         <el-table-column 
           prop="hash" 
           label="交易哈希" 
-          width="180"
+          min-width="180"
         />
         <el-table-column 
           prop="function_signature" 
           label="函数签名" 
-          width="150"
+          min-width="150"
         />
         <el-table-column 
           prop="function_name" 
           label="函数名" 
-          width="150"
+          min-width="150"
         />
         <el-table-column 
           prop="decoded_parameters" 
           label="解码参数" 
-          width="200"
+          min-width="200"
           show-overflow-tooltip
         >
           <template #default="{ row }">
@@ -117,7 +118,7 @@
         <el-table-column 
           prop="rules_check_passed" 
           label="规则检查" 
-          width="100"
+          min-width="100"
         >
           <template #default="{ row }">
             <el-tag :type="row.rules_check_passed ? 'success' : 'danger'">
@@ -128,7 +129,7 @@
         <el-table-column 
           prop="rules_check_message" 
           label="检查消息" 
-          width="200"
+          min-width="200"
           show-overflow-tooltip
         />
       </el-table>
@@ -334,33 +335,56 @@ onUnmounted(() => {
   background-color: #f5f7fa;
   min-height: calc(100vh - 40px);
   width: 100%;
+  box-sizing: border-box;
 }
 
 .table-container {
   width: 100%;
   overflow-x: auto;
   position: relative;
+  box-sizing: border-box;
 }
 
 /* 优化表格样式 */
 :deep(.el-table) {
   --el-table-bg-color: #ffffff;
   --el-table-tr-bg-color: #ffffff;
+  width: 100% !important;
 }
 
-/* 美化滚动条 */
-.table-container::-webkit-scrollbar {
-  height: 8px;
+:deep(.el-table__body) {
+  width: 100% !important;
 }
 
-.table-container::-webkit-scrollbar-thumb {
-  background: #909399;
-  border-radius: 4px;
+:deep(.el-table__inner-wrapper) {
+  width: 100% !important;
 }
 
-.table-container::-webkit-scrollbar-track {
-  background: #E4E7ED;
-  border-radius: 4px;
+/* 确保固定列样式正确 */
+:deep(.el-table__fixed) {
+  height: 100% !important;
+}
+
+:deep(.el-table__fixed-right) {
+  height: 100% !important;
+  right: 0;
+}
+
+/* 优化表格在不同屏幕尺寸下的显示 */
+@media screen and (max-width: 1920px) {
+  .table-container {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+  }
+}
+
+@media screen and (max-width: 1400px) {
+  .table-container {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+  }
 }
 
 /* 更新提示样式 */
@@ -381,15 +405,6 @@ onUnmounted(() => {
   margin-top: 20px;
   display: flex;
   justify-content: flex-end;
-}
-
-/* 确保表格在小屏幕上也能正常显示 */
-@media screen and (max-width: 1400px) {
-  .table-container {
-    margin: 0 -20px;
-    padding: 0 20px;
-    width: calc(100% + 40px);
-  }
 }
 
 .loading-tip {
