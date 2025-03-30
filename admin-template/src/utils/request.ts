@@ -1,12 +1,15 @@
 import axios from 'axios'
 
-const request = axios.create({
-  baseURL: process.env.VUE_APP_BASE_API || '',
-  timeout: 5000
+const service = axios.create({
+  baseURL: import.meta.env.VITE_API_URL,
+  timeout: 60000,
+  headers: {
+    'Content-Type': 'application/json'
+  }
 })
 
 // 请求拦截器
-request.interceptors.request.use(
+service.interceptors.request.use(
   config => {
     // 可以在这里添加token等认证信息
     return config
@@ -17,7 +20,7 @@ request.interceptors.request.use(
 )
 
 // 响应拦截器
-request.interceptors.response.use(
+service.interceptors.response.use(
   response => {
     return response.data
   },
@@ -26,4 +29,4 @@ request.interceptors.response.use(
   }
 )
 
-export default request
+export default service
