@@ -1,0 +1,1 @@
+2025-03-30 01:55:30,178 [ERROR] ❌ Main process error: Can't pickle local object 'construct_web3_formatting_middleware.<locals>.formatter_middleware'

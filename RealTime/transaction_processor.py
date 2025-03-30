@@ -1,57 +1,70 @@
 import psycopg2
-from concurrent.futures import ThreadPoolExecutor
+from multiprocessing import Pool, cpu_count
 from config import DB_CONFIG, BATCH_SIZE, MAX_WORKERS
 from abi_manager import ABIManager
 from logger import logger
 from tqdm import tqdm
 import time
 import json
+from rule_processor import RuleProcessor
 
 class TransactionProcessor:
     def __init__(self):
-        self.abi_manager = ABIManager()
+        self.max_processes = cpu_count()*2  # 使用CPU核心数量作为进程数
         
-    def process_batch(self, start_block, end_block, contract_addresses):
-        batch_start_time = time.time()
+    def process_batch_worker(self, batch_params):
+        """
+        工作进程处理单个批次
+        """
+        start_block, end_block, contract_addresses = batch_params
         conn = None
+        cursor = None
         try:
-            print(f"\n📦 Processing batch: {start_block} -> {end_block}")
+            print(f"\n📦 进程开始处理批次: {start_block} -> {end_block}")
             conn = psycopg2.connect(**DB_CONFIG)
+            cursor = conn.cursor()
+            
+            # 在每个工作进程中创建新的ABIManager实例
+            abi_manager = ABIManager()
+            
+            # 初始化规则处理器
+            rule_processor = RuleProcessor(DB_CONFIG)
+            
+            # 加载所有规则 - 不使用with语句
+            contract_rules = rule_processor.load_rules(cursor)
             
             # 获取原始交易数据
-            with conn.cursor() as cursor:
-                query = """
-                SELECT * FROM "default".eth_transaction
-                WHERE block_number BETWEEN %s AND %s
-                AND to_address = ANY(%s)
-                ORDER BY block_number, transaction_index
-                """
-                
-                cursor.execute(query, (start_block, end_block, contract_addresses))
-                transactions = cursor.fetchall()
-                
-                if not transactions:
-                    print(f"ℹ️ No transactions found in blocks {start_block}-{end_block}")
-                    return
+            query = """
+            SELECT * FROM "default".eth_transaction
+            WHERE block_number BETWEEN %s AND %s
+            AND to_address = ANY(%s)
+            ORDER BY block_number, transaction_index
+            """
+            
+            cursor.execute(query, (start_block, end_block, contract_addresses))
+            transactions = cursor.fetchall()
+            
+            if not transactions:
+                print(f"ℹ️ 区块 {start_block}-{end_block} 没有找到交易")
+                return 0, 0
 
-                print(f"🔍 Found {len(transactions)} transactions to process")
-                
-                # 获取列名
-                cursor.execute("""
-                    SELECT column_name 
-                    FROM information_schema.columns 
-                    WHERE table_schema = 'default' 
-                    AND table_name = 'eth_transaction' 
-                    ORDER BY ordinal_position
-                """)
-                columns = [col[0] for col in cursor.fetchall()]
+            print(f"🔍 区块 {start_block}-{end_block} 找到 {len(transactions)} 笔交易")
+            
+            # 获取列名
+            cursor.execute("""
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_schema = 'default' 
+                AND table_name = 'eth_transaction' 
+                ORDER BY ordinal_position
+            """)
+            columns = [col[0] for col in cursor.fetchall()]
             
             success_count = 0
             error_count = 0
             
-            # 为每个交易创建新的游标和事务
+            # 处理每个交易
             for tx in transactions:
-                cursor = conn.cursor()
                 try:
                     tx_dict = dict(zip(columns, tx))
                     
@@ -63,8 +76,8 @@ class TransactionProcessor:
                     if not input_data:
                         input_data = '0x'
                     
-                    # 解析input数据
-                    func_signature, func_name, decoded_params = self.abi_manager.decode_input(
+                    # 使用局部的abi_manager
+                    func_signature, func_name, decoded_params = abi_manager.decode_input(
                         to_address.strip(), input_data
                     )
                     
@@ -105,63 +118,119 @@ class TransactionProcessor:
                     """
                     
                     cursor.execute(insert_query, insert_data)
-                    conn.commit()  # 每个交易单独提交
+                    
+                    # 规则检查使用同一个cursor
+                    if func_name and decoded_params:
+                        tx_dict = {
+                            'block_number': insert_data[0],
+                            'transaction_index': insert_data[2],
+                            'to_address': insert_data[8],
+                            'function_name': func_name,
+                            'decoded_parameters': json.dumps(decoded_params)
+                        }
+                        
+                        check_result, check_message = rule_processor.check_transaction(
+                            tx_dict, 
+                            cursor  # 使用同一个cursor
+                        )
+                        
+                        rule_processor.update_transaction_rules_check(
+                            cursor,  # 使用同一个cursor
+                            tx_dict,
+                            check_result,
+                            check_message
+                        )
+                    else:
+                        tx_dict = {
+                            'block_number': insert_data[0],
+                            'transaction_index': insert_data[2]
+                        }
+                        rule_processor.update_transaction_rules_check(
+                            cursor,  # 使用同一个cursor
+                            tx_dict,
+                            True,
+                            "通过监管（无需解码的交易）"
+                        )
+                    
+                    conn.commit()
                     success_count += 1
                     
-                    if success_count % 10 == 0:
-                        print(f"📊 Progress: {success_count} succeeded, {error_count} failed")
-                    
                 except Exception as e:
-                    conn.rollback()  # 只回滚当前交易
+                    conn.rollback()
                     error_count += 1
                     print(f"❌ Error processing transaction at block={tx_dict.get('block_number', 'unknown')}: {str(e)}")
                     continue
-                finally:
-                    cursor.close()
             
-            batch_time = time.time() - batch_start_time
-            print(f"\n✅ Batch completed in {batch_time:.2f}s")
-            print(f"📊 Summary: {success_count} succeeded, {error_count} failed")
-            
+            return success_count, error_count
+
         except Exception as e:
-            print(f"❌ Batch error: {str(e)}")
+            print(f"❌ Batch error {start_block}-{end_block}: {str(e)}")
+            return 0, 0
         finally:
+            if cursor:
+                cursor.close()
             if conn:
                 conn.close()
 
     def process_range(self, begin_block, end_block, contract_addresses):
-        print(f"\n🚀 Starting processing range: {begin_block} -> {end_block}")
+        """
+        使用多进程处理区块范围
+        """
+        print(f"\n🚀 开始处理区块范围: {begin_block} -> {end_block}")
         
         # 计算批次
         batches = []
         current_block = begin_block
         while current_block < end_block:
             batch_end = min(current_block + BATCH_SIZE, end_block)
-            batches.append((current_block, batch_end))
+            batches.append((current_block, batch_end, contract_addresses))
             current_block = batch_end + 1
         
-        print(f"📑 Total batches: {len(batches)}")
+        total_batches = len(batches)
+        print(f"📑 总批次数: {total_batches}")
+        print(f"💻 使用进程数: {self.max_processes}")
         
-        completed_batches = 0
         start_time = time.time()
         
-        # 并行处理批次
-        with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-            futures = [
-                executor.submit(self.process_batch, start, end, contract_addresses)
-                for start, end in batches
-            ]
-            
-            # 等待所有批次完成
-            for future in futures:
-                try:
-                    future.result()
-                    completed_batches += 1
-                    print(f"\n📈 Progress: {completed_batches}/{len(batches)} batches completed")
-                except Exception as e:
-                    logger.error(f"❌ Future execution error: {str(e)}")
-                    continue
+        # 使用进程池处理批次
+        with Pool(processes=self.max_processes) as pool:
+            results = pool.map(self.process_batch_worker, batches)
+        
+        # 统计结果
+        total_success = sum(success for success, _ in results)
+        total_errors = sum(errors for _, errors in results)
         
         total_time = time.time() - start_time
-        print(f"\n🎉 Processing completed in {total_time:.2f}s")
-        print(f"📊 Final summary: {completed_batches}/{len(batches)} batches completed")
+        print(f"\n✨ 处理完成:")
+        print(f"   - 总耗时: {total_time:.2f}秒")
+        print(f"   - 成功: {total_success}")
+        print(f"   - 失败: {total_errors}")
+        print(f"   - 平均每批次耗时: {total_time/total_batches:.2f}秒")
+
+    def recheck_existing_transactions(self, contract_addresses=None):
+        """
+        重新检查已存在的交易
+        :param contract_addresses: 可选，指定要重新检查的合约地址列表
+        """
+        try:
+            print("\n🚀 开始重新检查已存在的交易...")
+            conn = psycopg2.connect(**DB_CONFIG)
+            
+            # 初始化规则处理器
+            rule_processor = RuleProcessor(DB_CONFIG)
+            
+            # 执行重新检查
+            rule_processor.recheck_transactions(conn, contract_addresses)
+            
+            print("✨ 重新检查完成")
+            
+        except Exception as e:
+            print(f"❌ 重新检查过程出错: {str(e)}")
+        finally:
+            if conn:
+                conn.close()
+
+    def warm_up_pool(self):
+        """预热进程池，避免冷启动开销"""
+        with Pool(processes=self.max_processes) as pool:
+            pool.map(lambda x: None, range(self.max_processes))

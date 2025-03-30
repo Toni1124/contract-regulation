@@ -17,8 +17,8 @@ def main():
         contract_addresses = read_contract_addresses()
         print(f"📝 Loaded {len(contract_addresses)} contract addresses")
         
-        begin_block = 17000000
-        end_block = 17000001
+        begin_block = 17100000
+        end_block = 18000000
         
         print(f"\n🎯 Target range: Block {begin_block} to {end_block}")
         processor = TransactionProcessor()
@@ -30,5 +30,14 @@ def main():
     else:
         print("\n✨ Program completed successfully")
 
+def recheck_transactions(contract_addresses=None):
+    processor = TransactionProcessor()
+    processor.recheck_existing_transactions(contract_addresses)
+
 if __name__ == "__main__":
+    # 示例1：重新检查所有交易
+    #recheck_transactions()
     main()
+    # 示例2：只重新检查指定合约的交易
+    # contract_addresses = ['0xdAC17F958D2ee523a2206206994597C13D831ec7']
+    # recheck_transactions(contract_addresses)

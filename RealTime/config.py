@@ -16,5 +16,5 @@ DATA_DIR = 'data'
 os.makedirs(ABI_DIR, exist_ok=True)
 os.makedirs(DATA_DIR, exist_ok=True)
 
-BATCH_SIZE = 10000  # 每个批次处理的区块数
-MAX_WORKERS = 4     # 并行处理的工作线程数
+BATCH_SIZE = 1000  # 每个批次处理的区块数
+MAX_WORKERS = 16     # 并行处理的工作线程数
