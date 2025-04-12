@@ -150,7 +150,7 @@
       </div>
     </div>
 
-    <!-- 添加注册记录表格 -->
+    <!-- 注册记录表格 -->
     <div class="table-section" style="margin-top: 20px;">
       <div class="section-header">
         <span>注册记录</span>
@@ -325,7 +325,7 @@
           <el-button 
             v-if="auditResult.status === 1" 
             type="primary" 
-            @click="handleRegister"
+            @click="registerDialogVisible = true"
           >
             注册合约
           </el-button>
@@ -412,6 +412,7 @@ const verificationResult = ref(null)
 const auditDialogVisible = ref(false)
 const fullscreenLoading = ref(false)
 const auditResult = ref<{
+  id: number,
   status: number
   name: string
   submitTime: string
@@ -420,6 +421,7 @@ const auditResult = ref<{
     securityChecks: SecurityCheck[]
   } | null
 }>({
+  id: 0,
   status: 0,
   name: '',
   submitTime: '',
@@ -454,6 +456,7 @@ const handleSubmit = async () => {
 
     // 显示审核结果弹窗
     auditResult.value = {
+      id: response.data.auditId,
       status: response.data.success ? 1 : 2,
       name: formData.name,
       submitTime: newRecord.submitTime,
@@ -570,6 +573,7 @@ const handleView = async (row: any) => {
     
     if (response.code === 200) {
       auditResult.value = {
+        id: response.data.id,
         status: response.data.audit_status,
         name: response.data.name,
         submitTime: response.data.submit_time,
@@ -620,26 +624,6 @@ const registerRules = {
   txHash: [{ required: true, message: '请输入交易哈希', trigger: 'blur' }]
 }
 
-// 打开注册弹窗
-const handleRegister = async (auditId: number) => {
-  try {
-    const response = await registerContract(auditId, {
-      address: registerForm.address,
-      tx_hash: registerForm.txHash
-    })
-
-    if (response.code === 200) {
-      ElMessage.success('合约注册成功')
-      registerDialogVisible.value = false
-      loadRegisteredContracts() // 刷新注册记录
-    } else {
-      throw new Error(response.message)
-    }
-  } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : '注册失败')
-  }
-}
-
 // 提交注册
 const submitRegister = async () => {
   if (!registerFormRef.value) return
@@ -647,32 +631,34 @@ const submitRegister = async () => {
   await registerFormRef.value.validate(async (valid: boolean) => {
     if (valid) {
       try {
-        // TODO: 调用注册合约的API
-        // await registerContract({
-        //   ...registerForm,
-        //   name: formData.name,
-        //   sourceCode: formData.sourceCode,
-        //   version: formData.version
-        // })
+        const response = await registerContract(auditResult.value.id, {
+          address: registerForm.address,
+          tx_hash: registerForm.txHash
+        })
         
-        ElMessage.success('合约注册成功')
-        registerDialogVisible.value = false
-        auditDialogVisible.value = false
-        loadTableData() // 刷新列表
+        if (response.code === 200) {
+          ElMessage.success('合约注册成功')
+          registerDialogVisible.value = false
+          auditDialogVisible.value = false
+          loadTableData() // 刷新审核记录
+          loadRegisteredContracts() // 刷新注册记录
+        } else {
+          throw new Error(response.message)
+        }
       } catch (error) {
-        ElMessage.error('合约注册失败')
+        ElMessage.error(error instanceof Error ? error.message : '注册失败')
       }
     }
   })
 }
 
-// 添加注册记录相关的数据
+// 添加注册记录的响应式数据
 const registeredContracts = ref([])
 const loadRegisteredContracts = async () => {
   try {
     const response = await getRegisteredContracts({
-      page: 1,
-      pageSize: 10
+      page: currentPage.value,
+      pageSize: pageSize.value
     })
     if (response.code === 200) {
       registeredContracts.value = response.data.list.map(item => ({
@@ -688,7 +674,7 @@ const loadRegisteredContracts = async () => {
   }
 }
 
-// 在组件挂载时加载历史记录
+// 在组件挂载时加载两个表格的数据
 onMounted(() => {
   loadTableData()
   loadRegisteredContracts()

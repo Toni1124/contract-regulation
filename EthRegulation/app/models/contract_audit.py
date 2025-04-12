@@ -12,7 +12,12 @@ class ContractAudit(db.Model):
     audit_status = db.Column(db.Integer, nullable=False, default=0, comment='审核状态：0-待审核，1-通过，2-未通过')
     audit_result = db.Column(db.JSON, nullable=True, comment='Slither分析结果')
     
-    # 如果通过审核后注册，关联到已有的contracts表
+    # 注册相关信息
+    contract_address = db.Column(db.String(42), nullable=True, comment='已部署的合约地址')
+    tx_hash = db.Column(db.String(66), nullable=True, comment='部署交易哈希')
+    register_time = db.Column(db.DateTime, nullable=True, comment='注册时间')
+    
+    # 关联到contracts表
     registered_contract_id = db.Column(db.Integer, db.ForeignKey('contracts.id'), nullable=True)
     registered_contract = db.relationship('Contract', backref=db.backref('audit_record', uselist=False))
 

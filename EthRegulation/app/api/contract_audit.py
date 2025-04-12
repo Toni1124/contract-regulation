@@ -130,39 +130,89 @@ def register_contract(audit_id):
         # 获取审核记录
         audit = ContractAudit.query.get_or_404(audit_id)
         
-        # 检查审核是否通过
+        # 检查审核状态
         if audit.audit_status != 1:
-            return jsonify({
-                'code': 400,
-                'message': 'Contract audit not passed'
-            }), 400
-
-        # 创建新的合约记录
+            return jsonify({'code': 400, 'message': '只有审核通过的合约才能注册'}), 400
+        
+        # 检查合约地址是否已在 contracts 表中存在
+        existing_contract = Contract.query.filter_by(address=data['address']).first()
+        if existing_contract:
+            # 如果合约已存在，只更新审核记录的关联信息
+            audit.contract_address = data['address']
+            audit.tx_hash = data['tx_hash']
+            audit.register_time = datetime.utcnow()
+            audit.registered_contract_id = existing_contract.id
+            
+            try:
+                db.session.commit()
+                return jsonify({
+                    'code': 200,
+                    'message': 'success',
+                    'data': {
+                        'contractId': existing_contract.id
+                    }
+                })
+            except Exception as e:
+                db.session.rollback()
+                logger.error(f"Error updating audit record: {str(e)}")
+                return jsonify({
+                    'code': 500,
+                    'message': '更新审核记录失败'
+                }), 500
+        
+        # 如果合约地址不存在，创建新的合约记录
         contract = Contract(
             name=audit.name,
             address=data['address'],
             source_code=audit.source_code,
-            status=1  # 已部署
+            status=1,
+            create_time=datetime.utcnow()
         )
         
-        db.session.add(contract)
-        
-        # 更新审核记录关联的已注册合约ID
-        audit.registered_contract_id = contract.id
-        
-        db.session.commit()
-
-        return jsonify({
-            'code': 200,
-            'message': 'Contract registered successfully',
-            'data': {
-                'contractId': contract.id
-            }
-        })
-
+        try:
+            # 修改这部分，使用原生SQL插入
+            result = db.session.execute(
+                """
+                INSERT INTO contracts (name, address, source_code, create_time, status)
+                VALUES (:name, :address, :source_code, :create_time, :status)
+                RETURNING id
+                """,
+                {
+                    'name': contract.name,
+                    'address': contract.address,
+                    'source_code': contract.source_code,
+                    'create_time': contract.create_time,
+                    'status': contract.status
+                }
+            )
+            new_contract_id = result.scalar()
+            
+            # 更新审核记录的注册信息
+            audit.contract_address = data['address']
+            audit.tx_hash = data['tx_hash']
+            audit.register_time = datetime.utcnow()
+            audit.registered_contract_id = new_contract_id
+            
+            db.session.commit()
+            
+            return jsonify({
+                'code': 200,
+                'message': 'success',
+                'data': {
+                    'contractId': new_contract_id
+                }
+            })
+            
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Database error during contract registration: {str(e)}")
+            return jsonify({
+                'code': 500,
+                'message': '数据库操作失败'
+            }), 500
+            
     except Exception as e:
-        logger.error(f"Error in register_contract: {str(e)}")
-        db.session.rollback()
+        logger.error(f"Error registering contract: {str(e)}")
         return jsonify({
             'code': 500,
             'message': str(e)
@@ -210,34 +260,37 @@ def get_registered_contracts():
         page = request.args.get('page', 1, type=int)
         page_size = request.args.get('pageSize', 10, type=int)
         
-        # 查询已注册的合约
-        query_obj = RegisteredContract.query.order_by(RegisteredContract.register_time.desc())
+        # 查询已注册的合约审核记录
+        query = ContractAudit.query.filter(
+            ContractAudit.contract_address.isnot(None)
+        ).order_by(ContractAudit.register_time.desc())
         
-        pagination = query_obj.paginate(
+        pagination = query.paginate(
             page=page, per_page=page_size, error_out=False
         )
-
-        contract_list = [{
+        
+        contracts = [{
             'id': item.id,
             'name': item.name,
-            'address': item.address,
+            'address': item.contract_address,
             'tx_hash': item.tx_hash,
-            'register_time': item.register_time.isoformat()
+            'register_time': item.register_time.isoformat() if item.register_time else None
         } for item in pagination.items]
-
+        
         return jsonify({
             'code': 200,
             'message': 'success',
             'data': {
-                'list': contract_list,
+                'list': contracts,
                 'total': pagination.total
             }
         })
+        
     except Exception as e:
         logger.error(f"Error getting registered contracts: {str(e)}")
         return jsonify({
             'code': 500,
-            'message': 'Internal server error'
+            'message': str(e)
         }), 500
 
 @bp.route('/detail/<int:audit_id>', methods=['GET'])
