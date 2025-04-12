@@ -34,16 +34,24 @@ export interface AuditResponse {
   }
 }
 
+// 审核记录接口
 export interface ContractAuditItem {
   id: number
   name: string
-  source_code: string
-  version: string
   submit_time: string
-  audit_status: number // 0: 待审核, 1: 通过, 2: 未通过
+  audit_status: number
   audit_result?: {
     securityChecks: SecurityCheck[]
   }
+}
+
+// 注册记录接口
+export interface RegisteredContract {
+  id: number
+  name: string
+  address: string
+  tx_hash: string
+  register_time: string
 }
 
 // 提交合约审核
@@ -95,5 +103,44 @@ export const getAuditList = (params: {
     url: '/api/contract-audit/list',
     method: 'get',
     params
+  })
+}
+
+// 获取注册记录列表
+export const getRegisteredContracts = (params: {
+  page: number
+  pageSize: number
+}) => {
+  return request<{
+    code: number
+    message: string
+    data: {
+      list: RegisteredContract[]
+      total: number
+    }
+  }>({
+    url: '/api/contract-audit/registered',
+    method: 'get',
+    params
+  })
+}
+
+// 获取审核详情
+export const getAuditDetail = (id: number) => {
+  return request<{
+    code: number
+    message: string
+    data: {
+      id: number
+      name: string
+      submit_time: string
+      audit_status: number
+      audit_result: {
+        securityChecks: SecurityCheck[]
+      } | null
+    }
+  }>({
+    url: `/api/contract-audit/detail/${id}`,
+    method: 'get'
   })
 }

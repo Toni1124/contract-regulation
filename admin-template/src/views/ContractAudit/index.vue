@@ -106,13 +106,6 @@
         style="width: 100%"
         v-loading="tableLoading"
       >
-        <el-table-column prop="address" label="合约地址" min-width="280">
-          <template #default="{ row }">
-            <el-tooltip :content="row.address" placement="top" :show-after="500">
-              <span class="address-text">{{ row.address }}</span>
-            </el-tooltip>
-          </template>
-        </el-table-column>
         <el-table-column prop="name" label="合约名称" min-width="180" sortable />
         <el-table-column prop="submitTime" label="提交时间" min-width="180" sortable>
           <template #default="{ row }">
@@ -136,7 +129,6 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="comment" label="审核意见" min-width="200" show-overflow-tooltip />
         <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="handleView(row)">查看详情</el-button>
@@ -158,6 +150,35 @@
       </div>
     </div>
 
+    <!-- 添加注册记录表格 -->
+    <div class="table-section" style="margin-top: 20px;">
+      <div class="section-header">
+        <span>注册记录</span>
+      </div>
+      <el-table :data="registeredContracts" border style="width: 100%">
+        <el-table-column prop="name" label="合约名称" min-width="180" />
+        <el-table-column prop="address" label="合约地址" min-width="280">
+          <template #default="{ row }">
+            <el-tooltip :content="row.address" placement="top" :show-after="500">
+              <span class="address-text">{{ row.address }}</span>
+            </el-tooltip>
+          </template>
+        </el-table-column>
+        <el-table-column prop="txHash" label="交易哈希" min-width="280">
+          <template #default="{ row }">
+            <el-tooltip :content="row.txHash" placement="top" :show-after="500">
+              <span class="address-text">{{ row.txHash }}</span>
+            </el-tooltip>
+          </template>
+        </el-table-column>
+        <el-table-column prop="registerTime" label="注册时间" min-width="180">
+          <template #default="{ row }">
+            {{ formatDate(row.registerTime) }}
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>
+
     <!-- 审核结果弹窗 -->
     <el-dialog
       v-model="auditDialogVisible"
@@ -169,10 +190,9 @@
         <!-- 基本信息 -->
         <div class="info-section">
           <el-descriptions :column="2" border>
-            <el-descriptions-item label="合约地址">{{ auditResult.address }}</el-descriptions-item>
             <el-descriptions-item label="合约名称">{{ auditResult.name }}</el-descriptions-item>
             <el-descriptions-item label="提交时间">{{ formatDate(auditResult.submitTime) }}</el-descriptions-item>
-            <el-descriptions-item label="审核状态">
+            <el-descriptions-item label="审核状态" :span="2">
               <el-tag :type="getStatusType(auditResult.status)">
                 {{ getStatusText(auditResult.status) }}
               </el-tag>
@@ -356,7 +376,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
 import { getContractList, submitContract, verifyContractCode, getTransactionInfo } from '@/api/contract'
-import { submitContractAudit, getAuditList, registerContract } from '@/api/contractAudit'
+import { submitContractAudit, getAuditList, registerContract, getRegisteredContracts, getAuditDetail } from '@/api/contractAudit'
 
 // 搜索和筛选相关
 const searchQuery = ref('')
@@ -391,11 +411,19 @@ const verificationResult = ref(null)
 // 审核结果相关
 const auditDialogVisible = ref(false)
 const fullscreenLoading = ref(false)
-const auditResult = ref({
+const auditResult = ref<{
+  status: number
+  name: string
+  submitTime: string
+  address: string
+  details: {
+    securityChecks: SecurityCheck[]
+  } | null
+}>({
   status: 0,
-  address: '',
   name: '',
   submitTime: '',
+  address: '',
   details: null
 })
 
@@ -429,6 +457,7 @@ const handleSubmit = async () => {
       status: response.data.success ? 1 : 2,
       name: formData.name,
       submitTime: newRecord.submitTime,
+      address: '',
       details: response.data.auditDetails ? {
         securityChecks: response.data.auditDetails.securityChecks.map(detail => ({
           title: detail.title,
@@ -537,50 +566,22 @@ const handleSizeChange = () => loadTableData()
 const handleCurrentChange = () => loadTableData()
 const handleView = async (row: any) => {
   try {
-    // 实际应该调用后端接口获取详细信息
-    // GET /api/contracts/{id}/audit-result
-    // 返回格式应该与提交审核时的结果格式一致，包含：
-    // {
-    //   status: number,
-    //   address: string,
-    //   name: string,
-    //   submitTime: string,
-    //   details: {
-    //     securityChecks: Array<{
-    //       title: string,
-    //       severity: 'error' | 'warning' | 'info',
-    //       description: string,
-    //       location?: {
-    //         line: number,
-    //         code: string
-    //       }
-    //     }>,
-    //     codeQuality: Array<{
-    //       type: string,
-    //       title: string,
-    //       suggestion: string
-    //     }>,
-    //     gasOptimization: Array<{
-    //       title: string,
-    //       description: string,
-    //       example?: {
-    //         before: string,
-    //         after: string
-    //       }
-    //     }>
-    //   }
-    // }
-
-    // 这里使用模拟数据
-    auditResult.value = {
-      status: row.status,
-      address: row.address,
-      name: row.name,
-      submitTime: row.submitTime,
-      details: row.auditDetails // 从表格数据中获取审核详情
+    const response = await getAuditDetail(row.id)
+    
+    if (response.code === 200) {
+      auditResult.value = {
+        status: response.data.audit_status,
+        name: response.data.name,
+        submitTime: response.data.submit_time,
+        address: '',
+        details: response.data.audit_result
+      }
+      auditDialogVisible.value = true
+    } else {
+      throw new Error(response.message)
     }
-    auditDialogVisible.value = true
   } catch (error) {
+    console.error('Error fetching audit detail:', error)
     ElMessage.error('获取审核详情失败')
   }
 }
@@ -630,7 +631,7 @@ const handleRegister = async (auditId: number) => {
     if (response.code === 200) {
       ElMessage.success('合约注册成功')
       registerDialogVisible.value = false
-      loadTableData() // 刷新列表
+      loadRegisteredContracts() // 刷新注册记录
     } else {
       throw new Error(response.message)
     }
@@ -665,9 +666,32 @@ const submitRegister = async () => {
   })
 }
 
+// 添加注册记录相关的数据
+const registeredContracts = ref([])
+const loadRegisteredContracts = async () => {
+  try {
+    const response = await getRegisteredContracts({
+      page: 1,
+      pageSize: 10
+    })
+    if (response.code === 200) {
+      registeredContracts.value = response.data.list.map(item => ({
+        id: item.id,
+        name: item.name,
+        address: item.address,
+        txHash: item.tx_hash,
+        registerTime: item.register_time
+      }))
+    }
+  } catch (error) {
+    ElMessage.error('获取注册记录失败')
+  }
+}
+
 // 在组件挂载时加载历史记录
 onMounted(() => {
   loadTableData()
+  loadRegisteredContracts()
 })
 </script>
 

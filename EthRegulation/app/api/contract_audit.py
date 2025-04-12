@@ -167,3 +167,99 @@ def register_contract(audit_id):
             'code': 500,
             'message': str(e)
         }), 500
+
+@bp.route('/list', methods=['GET'])
+def get_audit_list():
+    try:
+        page = request.args.get('page', 1, type=int)
+        page_size = request.args.get('pageSize', 10, type=int)
+        
+        query_obj = ContractAudit.query.order_by(ContractAudit.submit_time.desc())
+        
+        # 分页
+        pagination = query_obj.paginate(
+            page=page, per_page=page_size, error_out=False
+        )
+
+        audit_list = [{
+            'id': item.id,
+            'name': item.name,
+            'submit_time': item.submit_time.isoformat(),
+            'audit_status': item.audit_status,
+            'audit_result': item.audit_result
+        } for item in pagination.items]
+
+        return jsonify({
+            'code': 200,
+            'message': 'success',
+            'data': {
+                'list': audit_list,
+                'total': pagination.total
+            }
+        })
+    except Exception as e:
+        logger.error(f"Error getting audit list: {str(e)}")
+        return jsonify({
+            'code': 500,
+            'message': 'Internal server error'
+        }), 500
+
+@bp.route('/registered', methods=['GET'])
+def get_registered_contracts():
+    try:
+        page = request.args.get('page', 1, type=int)
+        page_size = request.args.get('pageSize', 10, type=int)
+        
+        # 查询已注册的合约
+        query_obj = RegisteredContract.query.order_by(RegisteredContract.register_time.desc())
+        
+        pagination = query_obj.paginate(
+            page=page, per_page=page_size, error_out=False
+        )
+
+        contract_list = [{
+            'id': item.id,
+            'name': item.name,
+            'address': item.address,
+            'tx_hash': item.tx_hash,
+            'register_time': item.register_time.isoformat()
+        } for item in pagination.items]
+
+        return jsonify({
+            'code': 200,
+            'message': 'success',
+            'data': {
+                'list': contract_list,
+                'total': pagination.total
+            }
+        })
+    except Exception as e:
+        logger.error(f"Error getting registered contracts: {str(e)}")
+        return jsonify({
+            'code': 500,
+            'message': 'Internal server error'
+        }), 500
+
+@bp.route('/detail/<int:audit_id>', methods=['GET'])
+def get_audit_detail(audit_id):
+    try:
+        # 获取审核记录
+        audit = ContractAudit.query.get_or_404(audit_id)
+        
+        return jsonify({
+            'code': 200,
+            'message': 'success',
+            'data': {
+                'id': audit.id,
+                'name': audit.name,
+                'submit_time': audit.submit_time.isoformat(),
+                'audit_status': audit.audit_status,
+                'audit_result': audit.audit_result
+            }
+        })
+    except Exception as e:
+        logger.error(f"Error getting audit detail: {str(e)}")
+        return jsonify({
+            'code': 500,
+            'message': 'Internal server error'
+        }), 500
