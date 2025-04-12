@@ -11,6 +11,10 @@ class Config:
     JSON_SORT_KEYS = False
     JSON_AS_ASCII = False
 
+    # 添加新的配置
+    TEMP_CONTRACT_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'temp_contracts')
+    SLITHER_REPORTS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'reports/slither')
+
 class TestConfig(Config):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:' 

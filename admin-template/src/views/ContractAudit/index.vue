@@ -30,22 +30,6 @@
       <!-- 右侧表单 -->
       <div class="form-section">
         <el-form ref="formRef" :model="formData" :rules="rules" label-width="100px">
-          <el-form-item label="合约地址" prop="address">
-            <el-input v-model="formData.address" placeholder="请输入已部署的合约地址">
-              <template #append>
-                <el-button @click="verifyContract">验证</el-button>
-              </template>
-            </el-input>
-          </el-form-item>
-          
-          <el-form-item label="交易哈希" prop="txHash">
-            <el-input v-model="formData.txHash" placeholder="部署合约的交易哈希">
-              <template #append>
-                <el-button @click="fetchTxInfo">获取</el-button>
-              </template>
-            </el-input>
-          </el-form-item>
-
           <el-form-item label="合约名称" prop="name">
             <el-input v-model="formData.name" placeholder="请输入合约名称" />
           </el-form-item>
@@ -56,13 +40,6 @@
               <el-option label="0.8.17" value="0.8.17" />
               <el-option label="0.8.20" value="0.8.20" />
             </el-select>
-          </el-form-item>
-
-          <el-form-item label="优化级别" prop="optimization">
-            <el-radio-group v-model="formData.optimization">
-              <el-radio :label="true">启用</el-radio>
-              <el-radio :label="false">禁用</el-radio>
-            </el-radio-group>
           </el-form-item>
 
           <el-form-item label="合约描述" prop="description">
@@ -224,25 +201,42 @@
           />
         </div>
 
-        <!-- 审核未通过状态 - 保持原有的详细风险展示 -->
+        <!-- 审核未通过状态 - 详细风险展示 -->
         <div v-else-if="auditResult.status === 2 && auditResult.details" class="result-section">
           <h3>审核详情</h3>
-          <!-- 安全检查结果 -->
           <div v-if="auditResult.details.securityChecks?.length" class="security-checks">
             <div v-for="(check, index) in auditResult.details.securityChecks" :key="index" class="check-item">
-              <el-alert
-                :title="check.title"
-                :type="check.severity"
-                :description="check.description"
-                show-icon
-              >
-                <template #default>
-                  <div class="code-location" v-if="check.location">
-                    <p>位置：第 {{ check.location.line }} 行</p>
-                    <pre><code>{{ check.location.code }}</code></pre>
+              <el-card class="check-card">
+                <template #header>
+                  <div class="check-header">
+                    <el-tag :type="check.severity === 'high' ? 'danger' : 'warning'" effect="dark">
+                      {{ check.severity.toUpperCase() }}
+                    </el-tag>
+                    <span class="check-title">{{ check.title }}</span>
                   </div>
                 </template>
-              </el-alert>
+                <div class="check-content">
+                  <div class="check-info">
+                    <div class="info-item">
+                      <strong>检查类型：</strong>
+                      <span>{{ check.check }}</span>
+                    </div>
+                    <div class="info-item">
+                      <strong>置信度：</strong>
+                      <span>{{ check.confidence }}</span>
+                    </div>
+                  </div>
+                  <div class="check-description">
+                    <strong>问题描述：</strong>
+                    <pre>{{ check.description }}</pre>
+                  </div>
+                  <div v-if="check.location" class="code-location">
+                    <strong>问题位置：</strong>
+                    <p>第 {{ check.location.line }} 行</p>
+                    <pre v-if="check.location.code"><code>{{ check.location.code }}</code></pre>
+                  </div>
+                </div>
+              </el-card>
             </div>
           </div>
 
@@ -308,6 +302,43 @@
       <template #footer>
         <span class="dialog-footer">
           <el-button @click="auditDialogVisible = false">关闭</el-button>
+          <el-button 
+            v-if="auditResult.status === 1" 
+            type="primary" 
+            @click="handleRegister"
+          >
+            注册合约
+          </el-button>
+        </span>
+      </template>
+    </el-dialog>
+
+    <!-- 添加注册合约弹窗 -->
+    <el-dialog
+      v-model="registerDialogVisible"
+      title="注册合约"
+      width="50%"
+      :close-on-click-modal="false"
+    >
+      <el-form 
+        ref="registerFormRef"
+        :model="registerForm"
+        :rules="registerRules"
+        label-width="100px"
+      >
+        <el-form-item label="合约地址" prop="address">
+          <el-input v-model="registerForm.address" placeholder="请输入已部署的合约地址" />
+        </el-form-item>
+        
+        <el-form-item label="交易哈希" prop="txHash">
+          <el-input v-model="registerForm.txHash" placeholder="部署合约的交易哈希" />
+        </el-form-item>
+      </el-form>
+
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="registerDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="submitRegister">提交注册</el-button>
         </span>
       </template>
     </el-dialog>
@@ -325,6 +356,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
 import { getContractList, submitContract, verifyContractCode, getTransactionInfo } from '@/api/contract'
+import { submitContractAudit, getAuditList, registerContract } from '@/api/contractAudit'
 
 // 搜索和筛选相关
 const searchQuery = ref('')
@@ -340,19 +372,14 @@ const editorLanguage = ref('solidity')
 // 表单数据
 const formRef = ref()
 const formData = reactive({
-  address: '',
-  txHash: '',
   name: '',
   description: '',
   sourceCode: '',
-  version: '0.8.17',
-  optimization: true
+  version: '0.8.17'
 })
 
 // 表单验证规则
 const rules = {
-  address: [{ required: true, message: '请输入合约地址', trigger: 'blur' }],
-  txHash: [{ required: true, message: '请输入交易哈希', trigger: 'blur' }],
   name: [{ required: true, message: '请输入合约名称', trigger: 'blur' }],
   version: [{ required: true, message: '请选择合约版本', trigger: 'change' }],
   sourceCode: [{ required: true, message: '请输入合约代码', trigger: 'blur' }]
@@ -360,39 +387,6 @@ const rules = {
 
 // 验证合约
 const verificationResult = ref(null)
-const verifyContract = async () => {
-  try {
-    const res = await verifyContractCode({
-      address: formData.address,
-      sourceCode: formData.sourceCode,
-      version: formData.version,
-      optimization: formData.optimization
-    })
-    verificationResult.value = res
-    if (res.success) {
-      ElMessage.success('合约验证成功')
-    }
-  } catch (error) {
-    ElMessage.error('合约验证失败')
-  }
-}
-
-// 获取交易信息
-const fetchTxInfo = async () => {
-  if (!formData.txHash) {
-    ElMessage.warning('请输入交易哈希')
-    return
-  }
-  try {
-    const res = await getTransactionInfo(formData.txHash)
-    if (res.data) {
-      formData.address = res.data.contractAddress
-      ElMessage.success('获取交易信息成功')
-    }
-  } catch (error) {
-    ElMessage.error('获取交易信息失败')
-  }
-}
 
 // 审核结果相关
 const auditDialogVisible = ref(false)
@@ -409,84 +403,53 @@ const auditResult = ref({
 const handleSubmit = async () => {
   try {
     fullscreenLoading.value = true
-    const [error, response] = await submitContract(formData)
-    if (error) throw error
+    const response = await submitContractAudit({
+      name: formData.name,
+      source_code: formData.sourceCode,
+      version: formData.version
+    })
 
-    // 直接添加到表格顶部，状态为审核中
+    if (response.code !== 200) {
+      throw new Error(response.message)
+    }
+
+    // 添加到表格顶部
     const newRecord = {
-      id: response.data.id,
-      address: formData.address,
+      id: response.data.auditId!,
       name: formData.name,
       submitTime: new Date().toISOString(),
-      status: 0, // 审核中
-      comment: '审核中...'
+      status: response.data.success ? 1 : 2,
+      comment: response.data.success ? '审核通过' : '发现安全漏洞'
     }
     tableData.value.unshift(newRecord)
     total.value += 1
 
-    // 模拟5秒后审核完成
-    setTimeout(async () => {
-      try {
-        // 模拟发现安全漏洞
-        const auditDetails = {
-          securityChecks: [
-            {
-              title: '重入攻击风险',
-              severity: 'error',
-              description: '检测到可能存在重入攻击风险的代码模式',
-              location: {
-                line: 42,
-                code: 'function withdraw() public {\n    uint amount = balances[msg.sender];\n    (bool success, ) = msg.sender.call{value: amount}("");\n    balances[msg.sender] = 0;\n}'
-              }
-            }
-          ],
-          codeQuality: [
-            {
-              type: 'warning',
-              title: '函数可见性优化',
-              suggestion: '建议明确指定所有函数的可见性'
-            }
-          ],
-          gasOptimization: [
-            {
-              title: '存储优化',
-              description: '使用 uint256 替代 uint8 可以节省 gas',
-              example: {
-                before: 'uint8[] public numbers;',
-                after: 'uint256[] public numbers;'
-              }
-            }
-          ]
-        }
+    // 显示审核结果弹窗
+    auditResult.value = {
+      status: response.data.success ? 1 : 2,
+      name: formData.name,
+      submitTime: newRecord.submitTime,
+      details: response.data.auditDetails ? {
+        securityChecks: response.data.auditDetails.securityChecks.map(detail => ({
+          title: detail.title,
+          severity: detail.severity.toLowerCase(),
+          description: detail.description,
+          check: detail.check,
+          confidence: detail.confidence,
+          location: detail.location
+        }))
+      } : null
+    }
+    auditDialogVisible.value = true
 
-        // 只更新这条记录
-        const index = tableData.value.findIndex(item => item.id === newRecord.id)
-        if (index !== -1) {
-          tableData.value[index] = {
-            ...newRecord,
-            status: 2, // 审核失败
-            comment: '发现安全漏洞',
-            auditDetails
-          }
-        }
-
-        // 显示审核结果弹窗
-        auditResult.value = {
-          status: 2,
-          address: formData.address,
-          name: formData.name,
-          submitTime: newRecord.submitTime,
-          details: auditDetails
-        }
-        auditDialogVisible.value = true
-        ElMessage.warning('审核发现安全漏洞')
-      } catch (error) {
-        ElMessage.error('获取审核结果失败')
-      }
-    }, 5000)
+    if (!response.data.success) {
+      ElMessage.warning('审核发现安全漏洞')
+    } else {
+      ElMessage.success('审核通过')
+    }
 
   } catch (error) {
-    ElMessage.error('提交失败')
+    ElMessage.error(error instanceof Error ? error.message : '提交失败')
   } finally {
     fullscreenLoading.value = false
   }
@@ -523,15 +486,26 @@ const filterStatus = (value: string, row: any) => {
 const loadTableData = async () => {
   try {
     tableLoading.value = true
-    const [error, response] = await getContractList({
+    const response = await getAuditList({
       page: currentPage.value,
       pageSize: pageSize.value,
       query: searchQuery.value,
-      status: statusFilter.value // 添加状态筛选
+      status: statusFilter.value ? Number(statusFilter.value) : undefined
     })
-    if (error) throw error
-    tableData.value = response.data.list
-    total.value = response.data.total
+
+    if (response.code === 200) {
+      tableData.value = response.data.list.map(item => ({
+        id: item.id,
+        name: item.name,
+        submitTime: item.submit_time,
+        status: item.audit_status,
+        comment: getStatusText(item.audit_status),
+        auditDetails: item.audit_result
+      }))
+      total.value = response.data.total
+    } else {
+      throw new Error(response.message)
+    }
   } catch (error) {
     ElMessage.error('获取数据失败')
   } finally {
@@ -632,6 +606,65 @@ const getDialogTitle = (status: number) => {
   return map[status] || '未知状态'
 }
 
+// 添加注册相关的数据和方法
+const registerDialogVisible = ref(false)
+const registerFormRef = ref()
+const registerForm = reactive({
+  address: '',
+  txHash: ''
+})
+
+const registerRules = {
+  address: [{ required: true, message: '请输入合约地址', trigger: 'blur' }],
+  txHash: [{ required: true, message: '请输入交易哈希', trigger: 'blur' }]
+}
+
+// 打开注册弹窗
+const handleRegister = async (auditId: number) => {
+  try {
+    const response = await registerContract(auditId, {
+      address: registerForm.address,
+      tx_hash: registerForm.txHash
+    })
+
+    if (response.code === 200) {
+      ElMessage.success('合约注册成功')
+      registerDialogVisible.value = false
+      loadTableData() // 刷新列表
+    } else {
+      throw new Error(response.message)
+    }
+  } catch (error) {
+    ElMessage.error(error instanceof Error ? error.message : '注册失败')
+  }
+}
+
+// 提交注册
+const submitRegister = async () => {
+  if (!registerFormRef.value) return
+  
+  await registerFormRef.value.validate(async (valid: boolean) => {
+    if (valid) {
+      try {
+        // TODO: 调用注册合约的API
+        // await registerContract({
+        //   ...registerForm,
+        //   name: formData.name,
+        //   sourceCode: formData.sourceCode,
+        //   version: formData.version
+        // })
+        
+        ElMessage.success('合约注册成功')
+        registerDialogVisible.value = false
+        auditDialogVisible.value = false
+        loadTableData() // 刷新列表
+      } catch (error) {
+        ElMessage.error('合约注册失败')
+      }
+    }
+  })
+}
+
 // 在组件挂载时加载历史记录
 onMounted(() => {
   loadTableData()
@@ -724,27 +757,66 @@ onMounted(() => {
 
       .security-checks {
         .check-item {
-          margin-bottom: 12px;
+          margin-bottom: 24px;
 
-          :deep(.el-alert__description) {
-            white-space: pre-line;
-            font-family: monospace;
-            margin-top: 8px;
-            line-height: 1.6;
-          }
+          .check-card {
+            .check-header {
+              display: flex;
+              align-items: center;
+              gap: 12px;
 
-          :deep(.el-alert__content) {
-            padding: 8px 0;
-          }
+              .check-title {
+                font-size: 16px;
+                font-weight: 500;
+              }
+            }
 
-          .code-location {
-            margin-top: 8px;
-            pre {
-              background-color: #f5f7fa;
-              padding: 12px;
-              border-radius: 4px;
-              margin: 8px 0;
-              font-size: 13px;
+            .check-content {
+              .check-info {
+                display: flex;
+                gap: 24px;
+                margin-bottom: 16px;
+
+                .info-item {
+                  display: flex;
+                  align-items: center;
+                  gap: 8px;
+                }
+              }
+
+              .check-description {
+                margin-bottom: 16px;
+
+                pre {
+                  margin-top: 8px;
+                  padding: 16px;
+                  background-color: #f8f9fb;
+                  border-radius: 4px;
+                  white-space: pre-wrap;
+                  word-wrap: break-word;
+                  font-family: monospace;
+                  font-size: 14px;
+                  line-height: 1.6;
+                }
+              }
+
+              .code-location {
+                p {
+                  margin: 8px 0;
+                }
+
+                pre {
+                  margin-top: 8px;
+                  padding: 16px;
+                  background-color: #1e1e1e;
+                  color: #d4d4d4;
+                  border-radius: 4px;
+                  overflow-x: auto;
+                  font-family: monospace;
+                  font-size: 14px;
+                  line-height: 1.6;
+                }
+              }
             }
           }
         }

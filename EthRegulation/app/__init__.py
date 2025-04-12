@@ -8,6 +8,7 @@ from app.api.rule import bp as rule_bp
 from app.config import Config
 from app.api import contracts
 from app.api.realtime_monitor import bp as realtime_monitor_bp
+from app.api.contract_audit import bp as contract_audit_bp
 
 def create_app(config_class=Config):
     app = Flask(__name__)
@@ -33,5 +34,7 @@ def create_app(config_class=Config):
     app.register_blueprint(rule_bp)
     app.register_blueprint(realtime_monitor_bp)
     app.register_blueprint(contracts.bp, url_prefix='/api')
+    app.register_blueprint(contract_audit_bp)
 
     return app 
+

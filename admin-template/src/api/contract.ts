@@ -254,4 +254,29 @@ export const getTransactionInfo = async (txHash: string) => {
   })
 }
 
+// 修改接口路径
+export const submitContractAudit = (data: {
+  sourceCode: string
+  name: string
+  version: string
+  optimization: boolean
+}) => {
+  return request<AuditResponse>({
+    url: '/api/contract-audit/submit',
+    method: 'post',
+    data
+  })
+}
+
+export const registerContract = (auditId: number, data: {
+  address: string
+  txHash: string
+}) => {
+  return request({
+    url: `/api/contract-audit/register/${auditId}`,
+    method: 'post',
+    data
+  })
+}
+
 // 合约相关的API接口定义 
