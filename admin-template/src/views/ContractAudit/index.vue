@@ -176,6 +176,11 @@
             {{ formatDate(row.registerTime) }}
           </template>
         </el-table-column>
+        <el-table-column label="操作" width="120" fixed="right">
+          <template #default="{ row }">
+            <el-button link type="primary" @click="handleViewContract(row)">查看详情</el-button>
+          </template>
+        </el-table-column>
       </el-table>
     </div>
 
@@ -368,15 +373,83 @@
       v-model:full-screen="fullscreenLoading"
       text="合约审核中..."
     />
+
+    <!-- 合约详情弹窗 -->
+    <el-dialog
+      v-model="contractDialogVisible"
+      title="合约详情"
+      width="80%"
+      :close-on-click-modal="false"
+      @opened="highlightCode"
+    >
+      <div class="contract-detail">
+        <!-- 基本信息 -->
+        <div class="info-section">
+          <el-descriptions :column="2" border>
+            <el-descriptions-item label="合约名称">{{ selectedContract.name }}</el-descriptions-item>
+            <el-descriptions-item label="合约地址">{{ selectedContract.address }}</el-descriptions-item>
+            <el-descriptions-item label="交易哈希">{{ selectedContract.txHash }}</el-descriptions-item>
+            <el-descriptions-item label="注册时间">{{ formatDate(selectedContract.registerTime) }}</el-descriptions-item>
+          </el-descriptions>
+        </div>
+
+        <!-- 源码预览 -->
+        <div class="source-code-section">
+          <div class="section-header">
+            <h3>合约源码</h3>
+          </div>
+          <div class="source-code">
+            <pre><code class="language-solidity">{{ selectedContract.sourceCode }}</code></pre>
+          </div>
+        </div>
+
+        <!-- 审核信息 -->
+        <div class="audit-info-section">
+          <div class="section-header">
+            <h3>审核信息</h3>
+          </div>
+          <div v-if="selectedContract.auditResult?.securityChecks" class="security-checks">
+            <div v-for="(check, index) in selectedContract.auditResult.securityChecks" :key="index" class="check-item">
+              <el-card class="check-card">
+                <template #header>
+                  <div class="check-header">
+                    <el-tag :type="check.severity === 'high' ? 'danger' : 'warning'" effect="dark">
+                      {{ check.severity.toUpperCase() }}
+                    </el-tag>
+                    <span class="check-title">{{ check.title }}</span>
+                  </div>
+                </template>
+                <div class="check-content">
+                  <div class="check-info">
+                    <div class="info-item">
+                      <strong>检查类型：</strong>
+                      <span>{{ check.check }}</span>
+                    </div>
+                    <div class="info-item">
+                      <strong>置信度：</strong>
+                      <span>{{ check.confidence }}</span>
+                    </div>
+                  </div>
+                  <div class="check-description">
+                    <strong>问题描述：</strong>
+                    <pre>{{ check.description }}</pre>
+                  </div>
+                </div>
+              </el-card>
+            </div>
+          </div>
+        </div>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
 import { getContractList, submitContract, verifyContractCode, getTransactionInfo } from '@/api/contract'
-import { submitContractAudit, getAuditList, registerContract, getRegisteredContracts, getAuditDetail } from '@/api/contractAudit'
+import { submitContractAudit, getAuditList, registerContract, getRegisteredContracts, getAuditDetail, getRegisteredContractDetail } from '@/api/contractAudit'
 
 // 搜索和筛选相关
 const searchQuery = ref('')
@@ -674,6 +747,56 @@ const loadRegisteredContracts = async () => {
   }
 }
 
+// 合约详情相关
+const contractDialogVisible = ref(false)
+const selectedContract = ref<any>(null)
+
+// 添加代码高亮函数
+const highlightCode = () => {
+  nextTick(() => {
+    if (typeof window.Prism !== 'undefined') {
+      try {
+        const codeElements = document.querySelectorAll('pre code')
+        codeElements.forEach((element) => {
+          // 确保代码块有正确的语言类
+          if (!element.classList.contains('language-solidity')) {
+            element.classList.add('language-solidity')
+          }
+          window.Prism.highlightElement(element)
+        })
+      } catch (e) {
+        console.error('代码高亮失败:', e)
+      }
+    } else {
+      console.warn('Prism is not loaded')
+    }
+  })
+}
+
+// 修改 handleViewContract 函数，在显示对话框后执行高亮
+const handleViewContract = async (row: any) => {
+  try {
+    const response = await getRegisteredContractDetail(row.id)
+    if (response.code === 200) {
+      selectedContract.value = {
+        ...row,
+        sourceCode: response.data.source_code,
+        auditResult: response.data.audit_result
+      }
+      contractDialogVisible.value = true
+      // 在对话框显示后执行代码高亮
+      nextTick(() => {
+        highlightCode()
+      })
+    } else {
+      throw new Error(response.message)
+    }
+  } catch (error) {
+    console.error('Error fetching contract detail:', error)
+    ElMessage.error('获取合约详情失败')
+  }
+}
+
 // 在组件挂载时加载两个表格的数据
 onMounted(() => {
   loadTableData()
@@ -886,6 +1009,54 @@ onMounted(() => {
               font-size: 14px;
             }
           }
+        }
+      }
+    }
+  }
+
+  .contract-detail {
+    .info-section {
+      margin-bottom: 24px;
+    }
+
+    .source-code-section {
+      margin-bottom: 24px;
+
+      .section-header {
+        margin-bottom: 16px;
+        h3 {
+          font-size: 16px;
+          font-weight: 500;
+          color: #303133;
+        }
+      }
+
+      .source-code {
+        background-color: #1e1e1e;
+        border-radius: 4px;
+        padding: 16px;
+        overflow: auto;
+        max-height: 500px;
+
+        pre {
+          margin: 0;
+          code {
+            font-family: 'Fira Code', Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            tab-size: 4;
+          }
+        }
+      }
+    }
+
+    .audit-info-section {
+      .section-header {
+        margin-bottom: 16px;
+        h3 {
+          font-size: 16px;
+          font-weight: 500;
+          color: #303133;
         }
       }
     }

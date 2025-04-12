@@ -144,3 +144,25 @@ export const getAuditDetail = (id: number) => {
     method: 'get'
   })
 }
+
+// 获取已注册合约详情
+export const getRegisteredContractDetail = (id: number) => {
+  return request<{
+    code: number
+    message: string
+    data: {
+      id: number
+      name: string
+      address: string
+      tx_hash: string
+      register_time: string
+      source_code: string
+      audit_result: {
+        securityChecks: SecurityCheck[]
+      }
+    }
+  }>({
+    url: `/api/contract-audit/registered-detail/${id}`,
+    method: 'get'
+  })
+}

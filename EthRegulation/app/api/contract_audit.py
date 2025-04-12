@@ -293,26 +293,36 @@ def get_registered_contracts():
             'message': str(e)
         }), 500
 
-@bp.route('/detail/<int:audit_id>', methods=['GET'])
-def get_audit_detail(audit_id):
+@bp.route('/registered-detail/<int:audit_id>', methods=['GET'])
+def get_registered_contract_detail(audit_id):
     try:
         # 获取审核记录
         audit = ContractAudit.query.get_or_404(audit_id)
         
+        # 确保该审核记录已经注册
+        if not audit.contract_address:
+            return jsonify({
+                'code': 400,
+                'message': '该审核记录尚未注册合约'
+            }), 400
+            
         return jsonify({
             'code': 200,
             'message': 'success',
             'data': {
                 'id': audit.id,
                 'name': audit.name,
-                'submit_time': audit.submit_time.isoformat(),
-                'audit_status': audit.audit_status,
+                'address': audit.contract_address,
+                'tx_hash': audit.tx_hash,
+                'register_time': audit.register_time.isoformat() if audit.register_time else None,
+                'source_code': audit.source_code,
                 'audit_result': audit.audit_result
             }
         })
+        
     except Exception as e:
-        logger.error(f"Error getting audit detail: {str(e)}")
+        logger.error(f"Error getting registered contract detail: {str(e)}")
         return jsonify({
             'code': 500,
-            'message': 'Internal server error'
+            'message': str(e)
         }), 500
