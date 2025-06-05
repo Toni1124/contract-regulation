@@ -35,10 +35,36 @@
           </el-form-item>
 
           <el-form-item label="合约版本" prop="version">
-            <el-select v-model="formData.version" style="width: 100%">
+            <el-select
+              v-model="formData.version"
+              style="width: 100%"
+              filterable
+              allow-create
+              placeholder="请选择或输入合约版本"
+            >
+              <el-option label="0.4.11" value="0.4.11" />
+              <el-option label="0.4.17" value="0.4.17" />
+              <el-option label="0.4.24" value="0.4.24" />
+              <el-option label="0.4.26" value="0.4.26" />
+              <el-option label="0.5.0" value="0.5.0" />
+              <el-option label="0.5.16" value="0.5.16" />
+              <el-option label="0.5.17" value="0.5.17" />
+              <el-option label="0.6.0" value="0.6.0" />
+              <el-option label="0.6.12" value="0.6.12" />
+              <el-option label="0.7.0" value="0.7.0" />
+              <el-option label="0.7.6" value="0.7.6" />
               <el-option label="0.8.0" value="0.8.0" />
+              <el-option label="0.8.4" value="0.8.4" />
+              <el-option label="0.8.7" value="0.8.7" />
+              <el-option label="0.8.9" value="0.8.9" />
+              <el-option label="0.8.13" value="0.8.13" />
+              <el-option label="0.8.15" value="0.8.15" />
               <el-option label="0.8.17" value="0.8.17" />
+              <el-option label="0.8.19" value="0.8.19" />
               <el-option label="0.8.20" value="0.8.20" />
+              <el-option label="0.8.21" value="0.8.21" />
+              <el-option label="0.8.22" value="0.8.22" />
+              <el-option label="0.8.23" value="0.8.23" />
             </el-select>
           </el-form-item>
 
@@ -182,6 +208,19 @@
           </template>
         </el-table-column>
       </el-table>
+
+      <!-- 分页 -->
+      <div class="pagination-container">
+        <el-pagination
+          v-model:current-page="registeredCurrentPage"
+          v-model:page-size="registeredPageSize"
+          :total="registeredTotal"
+          :page-sizes="[10, 20, 50, 100]"
+          layout="total, sizes, prev, pager, next"
+          @size-change="handleRegisteredSizeChange"
+          @current-change="handleRegisteredCurrentChange"
+        />
+      </div>
     </div>
 
     <!-- 审核结果弹窗 -->
@@ -408,36 +447,53 @@
           <div class="section-header">
             <h3>审核信息</h3>
           </div>
-          <div v-if="selectedContract.auditResult?.securityChecks" class="security-checks">
-            <div v-for="(check, index) in selectedContract.auditResult.securityChecks" :key="index" class="check-item">
-              <el-card class="check-card">
-                <template #header>
-                  <div class="check-header">
-                    <el-tag :type="check.severity === 'high' ? 'danger' : 'warning'" effect="dark">
-                      {{ check.severity.toUpperCase() }}
-                    </el-tag>
-                    <span class="check-title">{{ check.title }}</span>
-                  </div>
-                </template>
-                <div class="check-content">
-                  <div class="check-info">
-                    <div class="info-item">
-                      <strong>检查类型：</strong>
-                      <span>{{ check.check }}</span>
+          <div v-if="selectedContract?.auditResult?.status === 1">
+            <!-- 如果有安全检查问题 -->
+            <div v-if="selectedContract.auditResult.securityChecks?.length" class="security-checks">
+              <div v-for="(check, index) in selectedContract.auditResult.securityChecks" :key="index" class="check-item">
+                <el-card class="check-card">
+                  <template #header>
+                    <div class="check-header">
+                      <el-tag :type="check.severity === 'high' ? 'danger' : 'warning'" effect="dark">
+                        {{ check.severity.toUpperCase() }}
+                      </el-tag>
+                      <span class="check-title">{{ check.title }}</span>
                     </div>
-                    <div class="info-item">
-                      <strong>置信度：</strong>
-                      <span>{{ check.confidence }}</span>
+                  </template>
+                  <div class="check-content">
+                    <div class="check-info">
+                      <div class="info-item">
+                        <strong>检查类型：</strong>
+                        <span>{{ check.check }}</span>
+                      </div>
+                      <div class="info-item">
+                        <strong>置信度：</strong>
+                        <span>{{ check.confidence }}</span>
+                      </div>
+                    </div>
+                    <div class="check-description">
+                      <strong>问题描述：</strong>
+                      <pre>{{ check.description }}</pre>
+                    </div>
+                    <div v-if="check.location" class="code-location">
+                      <strong>问题位置：</strong>
+                      <p>第 {{ check.location.line }} 行</p>
+                      <pre v-if="check.location.code"><code>{{ check.location.code }}</code></pre>
                     </div>
                   </div>
-                  <div class="check-description">
-                    <strong>问题描述：</strong>
-                    <pre>{{ check.description }}</pre>
-                  </div>
-                </div>
-              </el-card>
+                </el-card>
+              </div>
+            </div>
+            <!-- 如果没有安全问题 -->
+            <div v-else class="audit-success">
+              <el-result
+                icon="success"
+                title="审核通过"
+                sub-title="该合约代码符合安全标准，未发现安全漏洞"
+              />
             </div>
           </div>
+          <el-empty v-else description="暂无审核信息" />
         </div>
       </div>
     </el-dialog>
@@ -567,6 +623,11 @@ const total = ref(0)
 const tableData = ref([])
 const tableLoading = ref(false)
 
+// 添加注册记录分页
+const registeredCurrentPage = ref(1)
+const registeredPageSize = ref(10)
+const registeredTotal = ref(0)
+
 // 格式化日期
 const formatDate = (dateStr: string) => {
   if (!dateStr) return ''
@@ -644,14 +705,16 @@ const handleView = async (row: any) => {
   try {
     const response = await getAuditDetail(row.id)
     
-    if (response.code === 200) {
+    if (response.code === 200) {  // 直接访问 response 的属性
       auditResult.value = {
         id: response.data.id,
         status: response.data.audit_status,
         name: response.data.name,
         submitTime: response.data.submit_time,
         address: '',
-        details: response.data.audit_result
+        details: {
+          securityChecks: response.data.audit_result?.securityChecks || []
+        }
       }
       auditDialogVisible.value = true
     } else {
@@ -714,6 +777,7 @@ const submitRegister = async () => {
           registerDialogVisible.value = false
           auditDialogVisible.value = false
           loadTableData() // 刷新审核记录
+          registeredCurrentPage.value = 1 // 重置到第一页
           loadRegisteredContracts() // 刷新注册记录
         } else {
           throw new Error(response.message)
@@ -730,8 +794,8 @@ const registeredContracts = ref([])
 const loadRegisteredContracts = async () => {
   try {
     const response = await getRegisteredContracts({
-      page: currentPage.value,
-      pageSize: pageSize.value
+      page: registeredCurrentPage.value,
+      pageSize: registeredPageSize.value
     })
     if (response.code === 200) {
       registeredContracts.value = response.data.list.map(item => ({
@@ -741,10 +805,23 @@ const loadRegisteredContracts = async () => {
         txHash: item.tx_hash,
         registerTime: item.register_time
       }))
+      registeredTotal.value = response.data.total
     }
   } catch (error) {
     ElMessage.error('获取注册记录失败')
   }
+}
+
+// 添加注册记录分页处理函数
+const handleRegisteredSizeChange = (val: number) => {
+  registeredPageSize.value = val
+  registeredCurrentPage.value = 1
+  loadRegisteredContracts()
+}
+
+const handleRegisteredCurrentChange = (val: number) => {
+  registeredCurrentPage.value = val
+  loadRegisteredContracts()
 }
 
 // 合约详情相关
@@ -773,18 +850,25 @@ const highlightCode = () => {
   })
 }
 
-// 修改 handleViewContract 函数，在显示对话框后执行高亮
+// 修改 handleViewContract 函数
 const handleViewContract = async (row: any) => {
   try {
     const response = await getRegisteredContractDetail(row.id)
     if (response.code === 200) {
+      // 确保审核结果数据的完整性
+      const auditResult = response.data.audit_result || {
+        securityChecks: []
+      }
+
       selectedContract.value = {
         ...row,
         sourceCode: response.data.source_code,
-        auditResult: response.data.audit_result
+        auditResult: {
+          status: 1, // 已注册的合约必定是审核通过的
+          securityChecks: auditResult.securityChecks || []
+        }
       }
       contractDialogVisible.value = true
-      // 在对话框显示后执行代码高亮
       nextTick(() => {
         highlightCode()
       })
@@ -1057,6 +1141,113 @@ onMounted(() => {
           font-size: 16px;
           font-weight: 500;
           color: #303133;
+        }
+      }
+
+      .security-checks {
+        .check-item {
+          margin-bottom: 16px;
+          &:last-child {
+            margin-bottom: 0;
+          }
+
+          .check-card {
+            .check-header {
+              display: flex;
+              align-items: center;
+              gap: 12px;
+
+              .check-title {
+                font-size: 14px;
+                font-weight: 500;
+              }
+            }
+
+            .check-content {
+              .check-info {
+                display: flex;
+                gap: 24px;
+                margin-bottom: 12px;
+
+                .info-item {
+                  display: flex;
+                  align-items: center;
+                  gap: 8px;
+                  
+                  strong {
+                    color: #606266;
+                  }
+                }
+              }
+
+              .check-description {
+                margin-bottom: 12px;
+
+                strong {
+                  display: block;
+                  margin-bottom: 8px;
+                  color: #606266;
+                }
+
+                pre {
+                  background-color: #f8f9fb;
+                  padding: 12px;
+                  border-radius: 4px;
+                  font-family: monospace;
+                  font-size: 13px;
+                  line-height: 1.5;
+                  white-space: pre-wrap;
+                  word-wrap: break-word;
+                }
+              }
+
+              .code-location {
+                strong {
+                  display: block;
+                  margin-bottom: 8px;
+                  color: #606266;
+                }
+
+                p {
+                  margin: 8px 0;
+                  color: #909399;
+                }
+
+                pre {
+                  background-color: #1e1e1e;
+                  padding: 12px;
+                  border-radius: 4px;
+                  overflow-x: auto;
+
+                  code {
+                    color: #d4d4d4;
+                    font-family: monospace;
+                    font-size: 13px;
+                    line-height: 1.5;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      .audit-success {
+        padding: 24px;
+        text-align: center;
+        
+        :deep(.el-result__icon) {
+          .el-icon {
+            color: #67C23A;
+          }
+        }
+        
+        :deep(.el-result__title) {
+          color: #67C23A;
+        }
+        
+        :deep(.el-result__subtitle) {
+          color: #606266;
         }
       }
     }

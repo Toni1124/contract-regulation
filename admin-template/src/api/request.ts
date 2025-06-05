@@ -1,7 +1,8 @@
 import axios from 'axios'
 
 const request = axios.create({
-  baseURL: 'http://127.0.0.1:5000',  // 确保这里指向你的 Flask 后端地址
+  //baseURL: 'http://127.0.0.1:5000',  // 确保这里指向你的 Flask 后端地址
+  baseURL: '/',
   timeout: 5000
 })
 

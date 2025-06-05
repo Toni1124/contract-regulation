@@ -326,3 +326,24 @@ def get_registered_contract_detail(audit_id):
             'code': 500,
             'message': str(e)
         }), 500
+
+@bp.route('/audit/<int:audit_id>', methods=['GET'])
+def get_audit_detail(audit_id):
+    try:
+        audit = ContractAudit.query.get_or_404(audit_id)
+        return jsonify({
+            'code': 200,
+            'message': 'success',
+            'data': {
+                'id': audit.id,
+                'name': audit.name,
+                'submit_time': audit.submit_time.isoformat() if audit.submit_time else None,
+                'audit_status': audit.audit_status,
+                'audit_result': audit.audit_result
+            }
+        })
+    except Exception as e:
+        return jsonify({
+            'code': 500,
+            'message': str(e)
+        }), 500
