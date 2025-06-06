@@ -268,8 +268,8 @@ const fetchSystemConfig = async () => {
       organizationOptions.value = res.data.organizations
     }
   } catch (error) {
-    console.error('获取系统配置失败:', error)
-    ElMessage.error('获取系统配置失败')
+    //console.error('获取系统配置失败:', error)
+    //ElMessage.error('获取系统配置失败')
   }
 }
 
