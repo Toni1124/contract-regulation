@@ -141,10 +141,10 @@ interface ListParams {
   operator?: string
 }
 
-// 获取列表
+// 主要业务API，使用代理
 export const getList = (params: ListParams) => {
   return request<ListResponse>({
-    url: '/api/black-white-list',
+    url: '/api/black-white-list',  // 相对路径，让代理处理
     method: 'get',
     params
   })
@@ -159,7 +159,8 @@ export const addItem = (data: {
   region: string
 }) => {
   return request<BlackWhiteListItem | ErrorResponse>({
-    url: '/api/black-white-list',
+    baseURL: BASE_URL,
+    url: `/api/black-white-list`,
     method: 'post',
     data
   })
@@ -181,6 +182,7 @@ export const updateItem = (id: number, data: UpdateItemData) => {
   }
   
   return request<BlackWhiteListItem | ErrorResponse>({
+    baseURL: BASE_URL,
     url: `/api/black-white-list/${id}`,
     method: 'put',
     data
@@ -190,6 +192,7 @@ export const updateItem = (id: number, data: UpdateItemData) => {
 // 删除
 export const deleteItem = (id: number) => {
   return request<null>({
+    baseURL: BASE_URL,
     url: `/api/black-white-list/${id}`,
     method: 'delete'
   })

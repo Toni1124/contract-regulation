@@ -18,7 +18,7 @@ export default defineConfig(async () => ({
 
   define: {
     "process.env": process.env,
-    'process.platform': JSON.stringify('win32'),
+   // 'process.platform': JSON.stringify('win32'),
     'process.env.NODE_DEBUG': JSON.stringify(''),
   },
 
@@ -54,16 +54,33 @@ export default defineConfig(async () => ({
 
   clearScreen: false,
   server: {
+    host: '0.0.0.0',
+    port: 5173,
     proxy: {
       '/api': {
         target: 'http://127.0.0.1:5000',
         changeOrigin: true
-      },
-      '/contracts': {
-        target: 'http://localhost:5000',
-        changeOrigin: true
       }
-    },
+    }
+    // proxy: {
+    //   '/api': {
+    //     target: 'http://127.0.0.1:5000',
+    //     changeOrigin: true
+    //   },
+    //   '/api2': {
+    //     target: 'http://127.0.0.1:6000',  // 另一个服务
+    //     changeOrigin: true
+    //   },
+    //   '/auth': {
+    //     target: 'http://127.0.0.1:7000',  // 认证服务
+    //     changeOrigin: true
+    //   },
+    //   '/contracts': {
+    //     target: 'http://localhost:5000',
+    //     changeOrigin: true
+    //   }
+    // },
+    
   },
-  preview: { proxy },
+  preview: {  proxy},
 }));

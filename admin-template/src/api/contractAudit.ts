@@ -136,11 +136,21 @@ export const getAuditDetail = (id: number) => {
       submit_time: string
       audit_status: number
       audit_result: {
-        securityChecks: SecurityCheck[]
-      } | null
+        securityChecks: Array<{
+          title: string
+          severity: string
+          description: string
+          check: string
+          confidence: string
+          location?: {
+            line: number
+            code: string
+          }
+        }>
+      }
     }
   }>({
-    url: `/api/contract-audit/detail/${id}`,
+    url: `/api/contract-audit/audit/${id}`,
     method: 'get'
   })
 }
