@@ -16,7 +16,7 @@ REMOTE_RPC = "https://ropsten.infura.io/v3/f005a211e84a455b9e25b7d2ffc7a09d"
 
 # Redis config
 REDIS_AVAILABLE = False
-REDIS_HOST = "localhost"
+REDIS_HOST = "10.0.2.148"
 REDIS_PORT = 6379
 REDIS_CONTRACT_DB = 0
 # REDIS_REGLANG_KNOWLEDGE_DB = 1

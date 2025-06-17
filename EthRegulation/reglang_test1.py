@@ -61,7 +61,7 @@ if __name__ == '__main__':
     }
 
     # 发送 POST 请求到 Flask 服务
-    url = 'http://127.0.0.1:5000/reglang/api'
+    url = 'http://10.0.2.148:5000/reglang/api'
     headers = {'Content-Type': 'application/json'}
     response = requests.post(url, headers=headers, data=json.dumps(data))
 

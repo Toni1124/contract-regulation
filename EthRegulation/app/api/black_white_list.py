@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-#from app.extensions import db
+from app.extensions import db
 from app.models.black_white_list import BlackWhiteList
 from app.schemas.black_white_list import BlackWhiteListSchema
 from sqlalchemy import func
